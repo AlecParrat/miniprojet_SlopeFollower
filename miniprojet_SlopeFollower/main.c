@@ -73,11 +73,18 @@ int main(void)
     messagebus_topic_t *imu_topic = messagebus_find_topic_blocking(&bus, "/imu");
     imu_msg_t imu_values;
 
-
+    //calibrates the IMU
+    calibrate_acc();		//the offset values are stored in the structure imu_msg_t defined in the imu.h file
 
     /* Infinite loop. */
     while (1) {
 
+    	//wait for new measures to be published
+    	messagebus_topic_wait(imu_topic, &imu_values, sizeof(imu_values));
+
+    	//prints the acquired values in RealTerm
+    	chprintf((BaseSequentialStream *)&SD3, "%acc_x=%-7d acc_y=%-7d\r\n",
+    			imu_values.acc_raw[0]-imu_values.acc_offset[0], imu_values.acc_raw[1]-imu_values.acc_offset[1]);
 
     }
 }
