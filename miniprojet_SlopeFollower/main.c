@@ -12,6 +12,7 @@
 #include <audio/microphone.h>
 
 #include <arm_math.h>
+#include <math.h>
 
 #include <sensors/imu.h>
 #include <sensors/mpu9250.h>
@@ -81,10 +82,33 @@ int main(void)
     	//wait for new measures to be published
     	messagebus_topic_wait(imu_topic, &imu_values, sizeof(imu_values));
 
-    	//prints the acquired values in RealTerm
-    	chprintf((BaseSequentialStream *)&SD3, "%acc_x=%-7d acc_y=%-7d\r\n",
-    			imu_values.acc_raw[0]-imu_values.acc_offset[0], imu_values.acc_raw[1]-imu_values.acc_offset[1]);
+    	//computes the angle according to the defined convention (left : [-180°, 0°] ; right : [0°, +180°]
+    	int16_t angle = 0;
+    	angle=(360/6.28)*atan(((float)imu_values.acc_raw[1]-(float)imu_values.acc_offset[1])/((float)imu_values.acc_raw[0]-(float)imu_values.acc_offset[0]));
 
+    	//corrects the angle value according to the orientation of the accelerometer (see axis printed on the body)
+    	// dial 1
+    	if(imu_values.acc_raw[0]-imu_values.acc_offset[0]>0 && imu_values.acc_raw[1]-imu_values.acc_offset[1]>0){
+    		angle = -angle-+90;
+    	}
+
+    	// dial 2
+    	if(imu_values.acc_raw[0]-imu_values.acc_offset[0]<0 && imu_values.acc_raw[1]-imu_values.acc_offset[1]>0){
+    		angle = -angle+90;
+    	}
+
+    	// dial 3
+    	if(imu_values.acc_raw[0]-imu_values.acc_offset[0]<0 && imu_values.acc_raw[1]-imu_values.acc_offset[1]<0){
+    		angle = -angle+90;
+    	}
+
+    	// dial 4
+    	if(imu_values.acc_raw[0]-imu_values.acc_offset[0]>0 && imu_values.acc_raw[1]-imu_values.acc_offset[1]<0){
+    		angle = -angle-90;
+    	}
+
+    	//prints the computed angle value in RealTerm
+    	chprintf((BaseSequentialStream *)&SD3, "%Angle_x=%-7d\r\n", angle);
     }
 }
 
