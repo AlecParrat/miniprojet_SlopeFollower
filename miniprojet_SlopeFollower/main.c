@@ -13,6 +13,15 @@
 
 #include <arm_math.h>
 
+#include <sensors/imu.h>
+#include <sensors/mpu9250.h>
+#include <i2c_bus.h>
+
+//inits the messagebus with a mutexe and a condvar in order to transfer data from the IMU
+messagebus_t bus;
+MUTEX_DECL(bus_lock);
+CONDVAR_DECL(bus_condvar);
+
 static void serial_start(void)
 {
 	static SerialConfig ser_cfg = {
@@ -44,9 +53,8 @@ static void timer12_start(void){
 int main(void)
 {
 	/* Initialisations */
-
-    halInit();
-    chSysInit();
+    halInit();							//Hardware Abstraction Layer
+    chSysInit();						//RTOS Chibi OS
 
     //starts the serial communication
     serial_start();
@@ -55,8 +63,21 @@ int main(void)
     //inits the motors
     motors_init();
 
+    //starts the I2C communication bus
+    i2c_start();
+    //starts the IMU
+    imu_start();
+
+    //inits the inter-process communication bus
+    messagebus_init(&bus, &bus_lock, &bus_condvar);
+    messagebus_topic_t *imu_topic = messagebus_find_topic_blocking(&bus, "/imu");
+    imu_msg_t imu_values;
+
+
+
     /* Infinite loop. */
     while (1) {
+
 
     }
 }
