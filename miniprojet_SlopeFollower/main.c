@@ -13,6 +13,8 @@
 
 #include <arm_math.h>
 
+#include <regulation.h>
+
 static void serial_start(void)
 {
 	static SerialConfig ser_cfg = {
@@ -54,6 +56,9 @@ int main(void)
     timer12_start();
     //inits the motors
     motors_init();
+
+    // démarrage de la régulation
+    regulator_start();
 
     /* Infinite loop. */
     while (1) {
