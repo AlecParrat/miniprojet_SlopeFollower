@@ -12,9 +12,17 @@
 #include <audio/microphone.h>
 
 #include <arm_math.h>
+#include <math.h>
+
 
 #include <regulation.h>
 
+#include <sensors/imu.h>
+#include <sensors/mpu9250.h>
+#include <i2c_bus.h>
+#include <angle.h>
+
+//inits the serial communication
 static void serial_start(void)
 {
 	static SerialConfig ser_cfg = {
@@ -27,6 +35,7 @@ static void serial_start(void)
 	sdStart(&SD3, &ser_cfg); // UART3.
 }
 
+//inits the timer 12
 static void timer12_start(void){
     //General Purpose Timer configuration   
     //timer 12 is a 16 bit timer so we can measure time
@@ -57,6 +66,8 @@ int main(void)
     //inits the motors
     motors_init();
 
+    //starts the thread dedicated to the computation of the angle
+    compute_angle_thd_start();
     // démarrage de la régulation
 
     regulator_start();
