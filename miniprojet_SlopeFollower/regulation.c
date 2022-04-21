@@ -8,6 +8,7 @@
 #include <main.h>
 #include <motors.h>
 #include <regulation.h>
+#include <angle.h>
 
 //faudra include imu.h pour obtenir l'angle directement avec une fonction
 // int16_t get_angle(void); qui retourne l'angle mesuré
@@ -19,8 +20,8 @@
 #define REGUL_PERIOD 10 // 10 ms -> 100 Hz
 
 //constantes du régulateur
-#define KP 1
-#define KI 0
+#define KP 5
+#define KI 0.1
 #define KD 0
 
 // régulateur PID
@@ -59,8 +60,6 @@ static THD_FUNCTION(Regulator, arg) {
 	//chRegSetThreadName(__FUNCITON__);
 	(void)arg;
 
-	int16_t angle_pente = 1000; //direction d'inclinaison mesurée à transmettre au régulateur
-
 	systime_t time;
 
 	// différence de vitesse entre les roues
@@ -73,7 +72,7 @@ static THD_FUNCTION(Regulator, arg) {
 		time = chVTGetSystemTime();
 
 		// appel du régulateur, la fct get_angle va chercher l'angle mesuré
-		delta_speed = regulator(angle_pente, angle_consigne);					//mettre get_angle
+		delta_speed = regulator(get_angle(), angle_consigne);
 
 		// calcul de la vitesse de rotation à transmettre à chaque moteur
 		// envoi de la consigne aux moteurs

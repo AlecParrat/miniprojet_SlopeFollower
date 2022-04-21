@@ -68,8 +68,8 @@ int main(void)
 
     //starts the thread dedicated to the computation of the angle
     compute_angle_thd_start();
-    // démarrage de la régulation
 
+    // démarrage de la régulation
     regulator_start();
 
     /* Infinite loop. */
