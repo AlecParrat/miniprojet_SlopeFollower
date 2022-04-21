@@ -17,12 +17,7 @@
 #include <sensors/imu.h>
 #include <sensors/mpu9250.h>
 #include <i2c_bus.h>
-#include <angle.c>
-
-//inits the messagebus with a mutexe and a conditionnal variable in order to transfer data
-messagebus_t bus;
-MUTEX_DECL(bus_lock);
-CONDVAR_DECL(bus_condvar);
+#include <angle.h>
 
 static void serial_start(void)
 {
@@ -65,23 +60,13 @@ int main(void)
     //inits the motors
     motors_init();
 
-    //starts the I2C communication bus
-    i2c_start();
-    //starts the IMU
-    imu_start();
-
-	//inits the inter-process communication bus
-	imu_msg_t imu_values;
-
-    //calibrates the IMU
-    calibrate_acc();		//the offset values are stored in the structure imu_msg_t defined in the imu.h file
+    //starts the thread dedicated to the computation of the angle
+    compute_angle_thd_start();
 
     /* Infinite loop. */
     while (1) {
-    	int16_t angle=compute_angle(imu_values, imu_topic);
 
-    	//prints the computed angle value in RealTerm
-    	chprintf((BaseSequentialStream *)&SD3, "%Angle_x=%-7d\r\n", angle);
+
     }
 }
 
