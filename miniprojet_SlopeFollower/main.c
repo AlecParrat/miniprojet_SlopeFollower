@@ -58,6 +58,7 @@ int main(void)
     motors_init();
 
     // démarrage de la régulation
+
     regulator_start();
 
     /* Infinite loop. */

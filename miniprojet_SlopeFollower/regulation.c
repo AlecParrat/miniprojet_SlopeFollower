@@ -13,7 +13,7 @@
 // int16_t get_angle(void); qui retourne l'angle mesuré
 
 //vitesse rectiligne d'avance du robot [step/s]
-#define SPEED_MOY  1000
+#define SPEED_MOY  500
 
 //période d'appel du régulateur [ms]
 #define REGUL_PERIOD 10 // 10 ms -> 100 Hz
@@ -42,10 +42,10 @@ int16_t regulator(int16_t angle_pente, int16_t angle_consigne){
 	err_pre = err;
 
 	//gestion des limites
-	if (delta_speed > SPEED_MOY) {
-		delta_speed = SPEED_MOY;
-	} else if (delta_speed < -SPEED_MOY) {
-		delta_speed = -SPEED_MOY;
+	if (delta_speed > (2*SPEED_MOY)) {
+		delta_speed = (2*SPEED_MOY);
+	} else if (delta_speed < -(2*SPEED_MOY)) {
+		delta_speed = -(2*SPEED_MOY);
 	}
 
 	return delta_speed;
@@ -59,7 +59,7 @@ static THD_FUNCTION(Regulator, arg) {
 	//chRegSetThreadName(__FUNCITON__);
 	(void)arg;
 
-	int16_t angle_pente = 0; //direction d'inclinaison mesurée à transmettre au régulateur
+	int16_t angle_pente = 1000; //direction d'inclinaison mesurée à transmettre au régulateur
 
 	systime_t time;
 
