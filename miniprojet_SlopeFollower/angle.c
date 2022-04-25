@@ -14,7 +14,7 @@
 #define Y_AXIS 1
 #define Z_AXIS 2
 
-#define INCL_LIMIT 500	// valeur d'accélération en z au-dessous de laquelle le robot va tout droit
+#define INCL_LIMIT 400	// valeur d'accélération en z au-dessous de laquelle le robot va tout droit
 
 static int16_t angle = 0; 					//measured angle
 
@@ -75,7 +75,7 @@ int16_t compute_angle(void){
 
 //allows to get the measured angle value from another file
 int16_t get_angle(void) {
-	return -angle; //l'angle est inversé par rapport à ce que l'on veut
+	return angle;
 }
 
 
