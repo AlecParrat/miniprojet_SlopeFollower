@@ -10,17 +10,20 @@
 #include <chprintf.h>
 #include <motors.h>
 #include <audio/microphone.h>
-
 #include <arm_math.h>
 #include <math.h>
-
-
+#include <prox.h>
 #include <regulation.h>
-
 #include <sensors/imu.h>
 #include <sensors/mpu9250.h>
 #include <i2c_bus.h>
 #include <angle.h>
+
+//inclure main.h dans les fichier où on utilise les bus
+//inits the message bus, the mutexe and the conditionnal variable used for the communication with the IMU
+messagebus_t bus;
+MUTEX_DECL(bus_lock);
+CONDVAR_DECL(bus_condvar);
 
 //inits the serial communication
 static void serial_start(void)
@@ -56,6 +59,9 @@ int main(void)
 {
 	/* Initialisations */
 
+	//inits the inter-process communication bus
+	messagebus_init(&bus, &bus_lock, &bus_condvar);
+
     halInit();
     chSysInit();
 
@@ -63,18 +69,20 @@ int main(void)
     serial_start();
     //starts timer 12
     timer12_start();
-    //inits the motors
-    motors_init();
 
     //starts the thread dedicated to the computation of the angle
     compute_angle_thd_start();
 
-    // démarrage de la régulation
+    // démarrage de la régulation et des moteurs
     regulator_start();
+
+    prox_sensors_start();
 
     /* Infinite loop. */
     while (1) {
-
+    	// test de fonctionnement en parallèle de l'IMU et des capteurs de proximité
+    	chprintf((BaseSequentialStream *)&SD3, "Proxy : %4d    ", get_proximity(0));
+    	chprintf((BaseSequentialStream *)&SD3, "Angle : %-7d\r\n", get_angle());
     }
 }
 

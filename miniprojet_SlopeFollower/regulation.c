@@ -14,7 +14,7 @@
 //faudra include imu.h pour obtenir l'angle directement avec une fonction
 // int16_t get_angle(void); qui retourne l'angle mesuré
 
-#define PRINT 1 //1 pour afficher les trucs, 0 pour pas afficher
+#define PRINT 0 //1 pour afficher les variables du régulateur, 0 pour pas afficher
 
 //vitesse rectiligne d'avance du robot [step/s]
 #define SPEED_MOY  0 //500
@@ -103,5 +103,6 @@ static THD_FUNCTION(Regulator, arg) {
 
 //démarrage du thread de régulation
 void regulator_start(void){
+    motors_init();
 	chThdCreateStatic(waRegulator, sizeof(waRegulator), NORMALPRIO, Regulator, NULL);
 }

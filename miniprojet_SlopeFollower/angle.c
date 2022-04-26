@@ -6,6 +6,7 @@
 #include <msgbus/messagebus.h>
 #include <angle.h>
 #include <chprintf.h>
+#include <main.h>
 
 #define PI 3.14
 #define COMPUTE_ANGLE_PERIOD 1000				//waiting time (in ms) of the thread that computes the angle
@@ -17,11 +18,6 @@
 #define INCL_LIMIT 400	// valeur d'accélération en z au-dessous de laquelle le robot va tout droit
 
 static int16_t angle = 0; 					//measured angle
-
-//inits the message bus, the mutexe and the conditionnal variable used for the communication with the IMU
-messagebus_t bus;
-MUTEX_DECL(bus_lock);
-CONDVAR_DECL(bus_condvar);
 
 //computes and returns the angle according to the defined convention (left : [-180°, 0°[ ; right : ]0°, +180°]
 int16_t compute_angle(void){
@@ -99,8 +95,6 @@ static THD_FUNCTION(compute_angle_thd, arg){
 //inits and calibrates the IMU, starts the thread that computes the angle
 void compute_angle_thd_start(){
 
-	//inits the inter-process communication bus
-	messagebus_init(&bus, &bus_lock, &bus_condvar);
 	//starts the IMU
 	imu_start();
     //calibrates the IMU
