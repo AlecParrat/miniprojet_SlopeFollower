@@ -76,13 +76,14 @@ int main(void)
     // démarrage de la régulation et des moteurs
     regulator_start();
 
+    // démarrage des capteurs de proximité
     prox_sensors_start();
 
     /* Infinite loop. */
     while (1) {
     	// test de fonctionnement en parallèle de l'IMU et des capteurs de proximité
-    	chprintf((BaseSequentialStream *)&SD3, "Proxy : %4d    ", get_proximity(0));
-    	chprintf((BaseSequentialStream *)&SD3, "Angle : %-7d\r\n", get_angle());
+//    	chprintf((BaseSequentialStream *)&SD3, "Proxy : %4d    ", get_proximity(0));
+//    	chprintf((BaseSequentialStream *)&SD3, "Angle : %-7d\r\n", get_angle());
     }
 }
 
