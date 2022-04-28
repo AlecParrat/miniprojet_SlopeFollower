@@ -6,6 +6,7 @@
 #include <msgbus/messagebus.h>
 #include <angle.h>
 #include <chprintf.h>
+#include <main.h>
 
 #define PI 3.14
 #define COMPUTE_ANGLE_PERIOD 1000				//waiting time (in ms) of the thread that computes the angle
@@ -14,11 +15,9 @@
 #define Y_AXIS 1
 #define Z_AXIS 2
 
-#define INCL_LIMIT 500	// valeur d'accélération en z au-dessous de laquelle le robot va tout droit
+#define INCL_LIMIT 400	// valeur d'accélération en z au-dessous de laquelle le robot va tout droit
 
 static int16_t angle = 0; 					//measured angle
-
-
 
 //computes and returns the angle according to the defined convention (left : [-180°, 0°[ ; right : ]0°, +180°]
 int16_t compute_angle(void){
@@ -72,7 +71,7 @@ int16_t compute_angle(void){
 
 //allows to get the measured angle value from another file
 int16_t get_angle(void) {
-	return -angle; //l'angle est inversé par rapport à ce que l'on veut
+	return angle;
 }
 
 
@@ -93,7 +92,13 @@ static THD_FUNCTION(compute_angle_thd, arg){
 	}
 }
 
-//starts the thread that computes the angle
+//inits and calibrates the IMU, starts the thread that computes the angle
 void compute_angle_thd_start(){
-	chThdCreateStatic(compute_angle_thd_wa, sizeof(compute_angle_thd_wa), NORMALPRIO, compute_angle_thd, NULL);;
+
+	//starts the IMU
+	imu_start();
+    //calibrates the IMU
+    calibrate_acc();
+	//starts the thread dedicated to the computation of the angle
+	chThdCreateStatic(compute_angle_thd_wa, sizeof(compute_angle_thd_wa), NORMALPRIO, compute_angle_thd, NULL);
 }

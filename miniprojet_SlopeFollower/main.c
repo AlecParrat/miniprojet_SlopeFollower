@@ -13,7 +13,7 @@
 
 #include <arm_math.h>
 #include <math.h>
-
+#include <prox.h>
 #include <regulation.h>
 
 #include <sensors/imu.h>
@@ -21,9 +21,8 @@
 #include <i2c_bus.h>
 #include <angle.h>
 
-#include <sensors/proximity.h>
-
-//inits a message bus, a mutexe and a conditionnal variable used for the communication
+//inclure main.h dans les fichier où on utilise les bus
+//inits the message bus, the mutexe and the conditionnal variable used for the communication with the IMU
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
@@ -62,6 +61,9 @@ int main(void)
 {
 	/* Initialisations */
 
+	//inits the inter-process communication bus
+	messagebus_init(&bus, &bus_lock, &bus_condvar);
+
     halInit();
     chSysInit();
 
@@ -69,28 +71,21 @@ int main(void)
     serial_start();
     //starts timer 12
     timer12_start();
-    //inits the motors
-    motors_init();
-
-    //starts the IMU
-    imu_start();
-    //calibrates the IMU
-    calibrate_acc();
 
     //starts the thread dedicated to the computation of the angle
-    //compute_angle_thd_start();
+    compute_angle_thd_start();
 
-    // démarrage de la régulation
-    //regulator_start();
+    // démarrage de la régulation et des moteurs
+    regulator_start();
 
-    proximity_start();
-
-    unsigned int prox_1=0;
+    // démarrage des capteurs de proximité
+    prox_sensors_start();
 
     /* Infinite loop. */
     while (1) {
-    	prox_1=get_prox(1);
-    	chprintf((BaseSequentialStream *)&SD3, "%Prox_1 =%4d\r\n", prox_1);
+    	// test de fonctionnement en parallèle de l'IMU et des capteurs de proximité
+//    	chprintf((BaseSequentialStream *)&SD3, "Proxy : %4d    ", get_proximity(0));
+//    	chprintf((BaseSequentialStream *)&SD3, "Angle : %-7d\r\n", get_angle());
     }
 }
 
