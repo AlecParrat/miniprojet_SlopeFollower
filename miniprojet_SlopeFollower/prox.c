@@ -14,7 +14,11 @@
 #include <chprintf.h>
 
 int get_proximity(int sensor_number) {
-	return get_prox(sensor_number);
+	//sans calibration
+	//return get_prox(sensor_number);
+
+	//avec calibration
+	return get_calibrated_prox(sensor_number);
 }
 
 //thread dedicated to the acquisition of the proximity with the 4 sensors at the front of the robot (IR 1, 2, 7, 8)
@@ -48,5 +52,6 @@ static THD_FUNCTION(get_proximity_thd, arg){
 
 void prox_sensors_start(void) {
 	proximity_start();
+	calibrate_ir();
 	chThdCreateStatic(get_proximity_thd_wa, sizeof(get_proximity_thd_wa), NORMALPRIO, get_proximity_thd, NULL);
 }
