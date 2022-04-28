@@ -17,3 +17,5 @@ int get_proximity(int sensor_number) {
 void prox_sensors_start(void) {
 	proximity_start();
 }
+
+

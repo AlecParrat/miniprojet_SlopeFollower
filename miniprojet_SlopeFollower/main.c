@@ -21,7 +21,7 @@
 #include <i2c_bus.h>
 #include <angle.h>
 
-//inclure main.h dans les fichier où on utilise les bus
+//inclure main.h dans les fichiers où on utilise les bus
 //inits the message bus, the mutexe and the conditionnal variable used for the communication with the IMU
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
@@ -84,8 +84,20 @@ int main(void)
     /* Infinite loop. */
     while (1) {
     	// test de fonctionnement en parallèle de l'IMU et des capteurs de proximité
-//    	chprintf((BaseSequentialStream *)&SD3, "Proxy : %4d    ", get_proximity(0));
-//    	chprintf((BaseSequentialStream *)&SD3, "Angle : %-7d\r\n", get_angle());
+    	//chprintf((BaseSequentialStream *)&SD3, "Proxy : %4d    ", get_proximity(0));
+    	//chprintf((BaseSequentialStream *)&SD3, "Angle : %-7d\r\n", get_angle());
+    	int16_t proxy_1 = 0;
+    	int16_t proxy_2 = 0;
+    	int16_t proxy_7 = 0;
+    	int16_t proxy_8 = 0;
+
+    	proxy_1=get_proximity(0);
+    	proxy_2=get_proximity(1);
+    	proxy_7=get_proximity(6);
+    	proxy_8=get_proximity(7);
+
+    	chprintf((BaseSequentialStream *)&SD3, "Droite = %4d   Devant droite = %4d   Devant gauche = %4d   Gauche = %4d\r\n"
+    											, proxy_2, proxy_1, proxy_8, proxy_7);
     }
 }
 

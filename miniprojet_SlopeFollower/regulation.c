@@ -14,7 +14,7 @@
 //faudra include imu.h pour obtenir l'angle directement avec une fonction
 // int16_t get_angle(void); qui retourne l'angle mesuré
 
-#define PRINT 1 //1 pour afficher les variables du régulateur, 0 pour pas afficher
+#define PRINT 0 //1 pour afficher les variables du régulateur, 0 pour pas afficher
 
 #define MOTORS_ON 0 // 1 pour allumer les moteurs, 0 pour les éteindre
 
