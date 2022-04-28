@@ -86,18 +86,7 @@ int main(void)
     	// test de fonctionnement en parallèle de l'IMU et des capteurs de proximité
     	//chprintf((BaseSequentialStream *)&SD3, "Proxy : %4d    ", get_proximity(0));
     	//chprintf((BaseSequentialStream *)&SD3, "Angle : %-7d\r\n", get_angle());
-    	int16_t proxy_1 = 0;
-    	int16_t proxy_2 = 0;
-    	int16_t proxy_7 = 0;
-    	int16_t proxy_8 = 0;
 
-    	proxy_1=get_proximity(0);
-    	proxy_2=get_proximity(1);
-    	proxy_7=get_proximity(6);
-    	proxy_8=get_proximity(7);
-
-    	chprintf((BaseSequentialStream *)&SD3, "Droite = %4d   Devant droite = %4d   Devant gauche = %4d   Gauche = %4d\r\n"
-    											, proxy_2, proxy_1, proxy_8, proxy_7);
     }
 }
 
