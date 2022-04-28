@@ -18,10 +18,7 @@
 
 static int16_t angle = 0; 					//measured angle
 
-//inits the message bus, the mutexe and the conditionnal variable used for the communication with the IMU
-messagebus_t bus;
-MUTEX_DECL(bus_lock);
-CONDVAR_DECL(bus_condvar);
+
 
 //computes and returns the angle according to the defined convention (left : [-180°, 0°[ ; right : ]0°, +180°]
 int16_t compute_angle(void){
@@ -96,15 +93,7 @@ static THD_FUNCTION(compute_angle_thd, arg){
 	}
 }
 
-//inits and calibrates the IMU, starts the thread that computes the angle
+//starts the thread that computes the angle
 void compute_angle_thd_start(){
-
-	//inits the inter-process communication bus
-	messagebus_init(&bus, &bus_lock, &bus_condvar);
-	//starts the IMU
-	imu_start();
-    //calibrates the IMU
-    calibrate_acc();
-	//starts the thread dedicated to the computation of the angle
-	chThdCreateStatic(compute_angle_thd_wa, sizeof(compute_angle_thd_wa), NORMALPRIO, compute_angle_thd, NULL);
+	chThdCreateStatic(compute_angle_thd_wa, sizeof(compute_angle_thd_wa), NORMALPRIO, compute_angle_thd, NULL);;
 }

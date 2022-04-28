@@ -14,13 +14,19 @@
 #include <arm_math.h>
 #include <math.h>
 
-
 #include <regulation.h>
 
 #include <sensors/imu.h>
 #include <sensors/mpu9250.h>
 #include <i2c_bus.h>
 #include <angle.h>
+
+#include <sensors/proximity.h>
+
+//inits a message bus, a mutexe and a conditionnal variable used for the communication
+messagebus_t bus;
+MUTEX_DECL(bus_lock);
+CONDVAR_DECL(bus_condvar);
 
 //inits the serial communication
 static void serial_start(void)
@@ -66,15 +72,25 @@ int main(void)
     //inits the motors
     motors_init();
 
+    //starts the IMU
+    imu_start();
+    //calibrates the IMU
+    calibrate_acc();
+
     //starts the thread dedicated to the computation of the angle
-    compute_angle_thd_start();
+    //compute_angle_thd_start();
 
     // démarrage de la régulation
-    regulator_start();
+    //regulator_start();
+
+    proximity_start();
+
+    unsigned int prox_1=0;
 
     /* Infinite loop. */
     while (1) {
-
+    	prox_1=get_prox(1);
+    	chprintf((BaseSequentialStream *)&SD3, "%Prox_1 =%4d\r\n", prox_1);
     }
 }
 
