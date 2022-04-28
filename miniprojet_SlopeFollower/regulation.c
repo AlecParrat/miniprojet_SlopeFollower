@@ -10,9 +10,11 @@
 #include <regulation.h>
 #include <angle.h>
 #include <chprintf.h>
+#include <prox.h>
 
-//faudra include imu.h pour obtenir l'angle directement avec une fonction
-// int16_t get_angle(void); qui retourne l'angle mesuré
+// modes de fonctionnement
+#define NORMAL false		// fonctionnement normal
+#define ESCAPING true	// echappement d'un mur
 
 #define PRINT 1 //1 pour afficher les variables du régulateur, 0 pour pas afficher
 
@@ -20,6 +22,9 @@
 
 //vitesse rectiligne d'avance du robot [step/s]
 #define SPEED_MOY  500 //500
+
+// Nombre de steps pour 1 tour sur lui-meme
+#define STEPS_TOUR 1000
 
 //période d'appel du régulateur [ms]
 #define REGUL_PERIOD 10 // 10 ms -> 100 Hz
@@ -78,8 +83,60 @@ int16_t regulator(int16_t angle_pente, int16_t angle_consigne){
 	return delta_speed;
 }
 
-// thread de gestion du PID pour la commande des moteurs
+// fonction d'esquive d'obstacles
+// retuourne le nombre de step à effectuer
+int16_t esquive(int8_t alert_number) {
+	int16_t steps_to_do = 0;
+	int16_t speed = SPEED_MOY;
+
+	switch (alert_number) {
+
+	//définition du mouvement à effectuer
+	case 1 :
+		steps_to_do = STEPS_TOUR;
+		speed = -SPEED_MOY;
+		break;
+
+	case 2 :
+		steps_to_do = STEPS_TOUR;
+		speed = -SPEED_MOY;
+		break;
+
+	case 3 :
+		steps_to_do = STEPS_TOUR;
+		speed = -SPEED_MOY;
+		break;
+
+	case 4 :
+		steps_to_do = STEPS_TOUR;
+		speed = -SPEED_MOY;
+		break;
+
+	case 5 :
+		steps_to_do = STEPS_TOUR;
+		speed = -SPEED_MOY;
+		break;
+
+	case 6 :
+		steps_to_do = STEPS_TOUR;
+		speed = -SPEED_MOY;
+		break;
+	}
+
+	//gestion des moteurs
+	left_motor_set_speed(SPEED_MOY);
+	right_motor_set_speed(-SPEED_MOY);
+	left_motor_set_pos(0);
+	right_motor_set_pos(0);
+
+	return abs(steps_to_do);
+}
+
+// thread de gestion du déplacement
+// définit le mode de déplacement
+// gestion du PID pour la commande des moteurs
 // définit la différence de vitesse entre les deux roues (virage)
+// gestion des manoeuvres d'esquive
 static THD_WORKING_AREA(waRegulator, 256);
 static THD_FUNCTION(Regulator, arg) {
 
@@ -87,6 +144,10 @@ static THD_FUNCTION(Regulator, arg) {
 	(void)arg;
 
 	systime_t time;
+
+	bool mode_fonc = NORMAL; // mode de fonctionnement
+	int8_t prox_alert = 0; //variable controlée par le thread des capteurs de proximité
+	int16_t steps_to_do = 0; //step à faire pour l'esquive
 
 	// différence de vitesse entre les roues
 	int16_t delta_speed = 0;
@@ -97,14 +158,31 @@ static THD_FUNCTION(Regulator, arg) {
 	while(1) {
 		time = chVTGetSystemTime();
 
-		// appel du régulateur, la fct get_angle va chercher l'angle mesuré
-		delta_speed = regulator(get_angle(), angle_consigne);
+		//récupération des alertes de proximité (inutile si en cours d'estquive
+		if(mode_fonc == NORMAL) {
+			prox_alert = 0;//get_prox_alert();
+		}
 
-		// calcul de la vitesse de rotation à transmettre à chaque moteur
-		// envoi de la consigne aux moteurs
-		if(MOTORS_ON) {
-			right_motor_set_speed(SPEED_MOY - delta_speed);
-			left_motor_set_speed(SPEED_MOY + delta_speed);
+		//gestion du mode de fonctionnement
+		if ((mode_fonc == NORMAL) && (prox_alert == 0)) { // mode normal
+			// appel du régulateur, la fct get_angle va chercher l'angle mesuré
+			delta_speed = regulator(get_angle(), angle_consigne);
+
+			// calcul de la vitesse de rotation à transmettre à chaque moteur
+			// envoi de la consigne aux moteurs
+			if(MOTORS_ON) {
+				right_motor_set_speed(SPEED_MOY - delta_speed);
+				left_motor_set_speed(SPEED_MOY + delta_speed);
+			}
+
+		} else if ((mode_fonc == NORMAL) && (prox_alert != 0)) { // manoevre d'esquive
+			mode_fonc = ESCAPING;
+			steps_to_do = esquive(prox_alert); // démarrage de la manoeuvre d'esquive
+
+		} else if ((mode_fonc == ESCAPING) && (abs(left_motor_get_pos()) >= steps_to_do)) { // fin de l'esquive
+			left_motor_set_speed(0);
+			right_motor_set_speed(0);
+			mode_fonc = NORMAL;
 		}
 
 		//frequence du thread
