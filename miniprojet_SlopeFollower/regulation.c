@@ -18,13 +18,15 @@
 
 #define PRINT 0 //1 pour afficher les variables du régulateur, 0 pour pas afficher
 
-#define MOTORS_ON 0 // 1 pour allumer les moteurs, 0 pour les éteindre
+#define MOTORS_ON 1 // 1 pour allumer les moteurs, 0 pour les éteindre
 
-//vitesse rectiligne d'avance du robot [step/s]
-#define SPEED_MOY  500 //500
+//vitesse max du robot [step/s]
+#define SPEED_MAX  1000
+
+#define SPEED_MOY (SPEED_MAX/2) //vitesse moyenne du robot
 
 // Nombre de steps pour 1 tour sur lui-meme
-#define STEPS_TOUR 1000
+#define STEPS_TOUR 1320
 
 //période d'appel du régulateur [ms]
 #define REGUL_PERIOD 10 // 10 ms -> 100 Hz
@@ -35,7 +37,7 @@
 #define KD 0
 
 // régulateur PID
-int16_t regulator(int16_t angle_pente, int16_t angle_consigne){
+int16_t regulator(int16_t angle_pente, int16_t angle_consigne, bool reset){
 	int16_t err = 0; //error relativ to consigne
 	float prop = 0; // proportional term, float because can be small
 
@@ -43,6 +45,12 @@ int16_t regulator(int16_t angle_pente, int16_t angle_consigne){
 	static int16_t delta_speed_ini = 0; // delta speed before limit check (to keep for the ARW)
 	static float integr = 0; // integral term, float because can be small
 	static int16_t err_pre = 0; //previous error for the differential term
+
+	// Variables à remettre à 0 après une pause de régualtion
+	if(reset) {
+		integr = 0;
+		err_pre = 0;
+	}
 
 	err = angle_pente - angle_consigne;
 
@@ -87,45 +95,45 @@ int16_t regulator(int16_t angle_pente, int16_t angle_consigne){
 // retuourne le nombre de step à effectuer
 int16_t esquive(int8_t alert_number) {
 	int16_t steps_to_do = 0;
-	int16_t speed = SPEED_MOY;
+	int16_t speed = SPEED_MAX;
 
 	switch (alert_number) {
 
 	//définition du mouvement à effectuer
 	case 1 :
-		steps_to_do = STEPS_TOUR;
-		speed = -SPEED_MOY;
+		steps_to_do = STEPS_TOUR/4;
+		speed = -SPEED_MAX;
 		break;
 
 	case 2 :
-		steps_to_do = STEPS_TOUR;
-		speed = -SPEED_MOY;
+		steps_to_do = (STEPS_TOUR*3)/8;
+		speed = -SPEED_MAX;
 		break;
 
 	case 3 :
-		steps_to_do = STEPS_TOUR;
-		speed = -SPEED_MOY;
+		steps_to_do = STEPS_TOUR/2;
+		speed = -SPEED_MAX;
 		break;
 
 	case 4 :
-		steps_to_do = STEPS_TOUR;
-		speed = -SPEED_MOY;
+		steps_to_do = STEPS_TOUR/2;
+		speed = SPEED_MAX;
 		break;
 
 	case 5 :
-		steps_to_do = STEPS_TOUR;
-		speed = -SPEED_MOY;
+		steps_to_do = (STEPS_TOUR*3)/8;
+		speed = SPEED_MAX;
 		break;
 
 	case 6 :
-		steps_to_do = STEPS_TOUR;
-		speed = -SPEED_MOY;
+		steps_to_do = STEPS_TOUR/4;
+		speed = SPEED_MAX;
 		break;
 	}
 
 	//gestion des moteurs
-	left_motor_set_speed(SPEED_MOY);
-	right_motor_set_speed(-SPEED_MOY);
+	left_motor_set_speed(speed);
+	right_motor_set_speed(-speed);
 	left_motor_set_pos(0);
 	right_motor_set_pos(0);
 
@@ -160,13 +168,13 @@ static THD_FUNCTION(Regulator, arg) {
 
 		//récupération des alertes de proximité (inutile si en cours d'estquive
 		if(mode_fonc == NORMAL) {
-			prox_alert = 0;//get_prox_alert();
+			prox_alert = get_prox_alert();
 		}
 
 		//gestion du mode de fonctionnement
 		if ((mode_fonc == NORMAL) && (prox_alert == 0)) { // mode normal
 			// appel du régulateur, la fct get_angle va chercher l'angle mesuré
-			delta_speed = regulator(get_angle(), angle_consigne);
+			delta_speed = regulator(get_angle(), angle_consigne, false);
 
 			// calcul de la vitesse de rotation à transmettre à chaque moteur
 			// envoi de la consigne aux moteurs
@@ -175,7 +183,7 @@ static THD_FUNCTION(Regulator, arg) {
 				left_motor_set_speed(SPEED_MOY + delta_speed);
 			}
 
-		} else if ((mode_fonc == NORMAL) && (prox_alert != 0)) { // manoevre d'esquive
+		} else if ((mode_fonc == NORMAL) && (prox_alert != 0)) { // manoeuvre d'esquive
 			mode_fonc = ESCAPING;
 			steps_to_do = esquive(prox_alert); // démarrage de la manoeuvre d'esquive
 
@@ -183,6 +191,11 @@ static THD_FUNCTION(Regulator, arg) {
 			left_motor_set_speed(0);
 			right_motor_set_speed(0);
 			mode_fonc = NORMAL;
+			delta_speed = regulator(get_angle(), angle_consigne, true); //appel du régulateur et reset des variable
+			if(MOTORS_ON) {
+				right_motor_set_speed(SPEED_MOY - delta_speed);
+				left_motor_set_speed(SPEED_MOY + delta_speed);
+			}
 		}
 
 		//frequence du thread
