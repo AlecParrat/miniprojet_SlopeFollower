@@ -25,6 +25,23 @@
 #include <chprintf.h>
 #include <stdbool.h>
 
+// Proximity alert
+static int8_t proximity_alert = 0;
+
+// Alert values :
+
+// 0 : no alert
+// 1 : right_1 alert
+// 2 : right_2 alert
+// 3 : right_3 alert
+// 4 : left_1 alert
+// 5 : left_2 alert
+// 6 : left_3 alert
+
+int8_t get_prox_alert(void){
+	return proximity_alert;
+}
+
 int get_proximity(int sensor_number) {
 	//sans calibration
 	//return get_prox(sensor_number);
@@ -49,19 +66,6 @@ static THD_FUNCTION(get_proximity_thd, arg){
 	int16_t proxy_left_1 = 0;
 	int16_t proxy_left_2 = 0;
 	int16_t proxy_left_3 = 0;
-
-	// Proximity alert
-	int8_t proximity_alert = 0;
-
-	// Alert values :
-
-	// 0 : no alert
-	// 1 : right_1 alert
-	// 2 : right_2 alert
-	// 3 : right_3 alert
-	// 4 : left_1 alert
-	// 5 : left_2 alert
-	// 6 : left_3 alert
 
 	while(1){
 
@@ -100,14 +104,14 @@ static THD_FUNCTION(get_proximity_thd, arg){
 			proximity_alert = 0;
 		}
 
-		chprintf((BaseSequentialStream *)&SD3, "Alerte : %d\r\n", proximity_alert);
+		// uncomment to print the alert value
+		//chprintf((BaseSequentialStream *)&SD3, "Alerte : %d\r\n", proximity_alert);
 
-
-//		chprintf((BaseSequentialStream *)&SD3, "Droite = %4d   Devant droite = %4d   Devant gauche = %4d   Gauche = %4d\r\n"
-//		    									, proxy_right, proxy_front_right, proxy_front_left, proxy_left);
+		// uncomment to print the sensors value
+		// chprintf((BaseSequentialStream *)&SD3, "right_3 = %d right_2 = %d right_1 = %d left_1 = %d left_2 = %d left_3 = %d\r\n",
+		// proxy_right_3, proxy_right_2, proxy_right_1, proxy_left_1, proxy_left_2, proxy_left_3);
 
 		chThdSleepUntilWindowed(time, time + MS2ST(GET_PROXIMITY_PERIOD));
-
 	}
 }
 

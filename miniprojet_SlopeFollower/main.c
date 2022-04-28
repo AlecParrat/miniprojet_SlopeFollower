@@ -83,9 +83,6 @@ int main(void)
 
     /* Infinite loop. */
     while (1) {
-    	// test de fonctionnement en parallèle de l'IMU et des capteurs de proximité
-    	//chprintf((BaseSequentialStream *)&SD3, "Proxy : %4d    ", get_proximity(0));
-    	//chprintf((BaseSequentialStream *)&SD3, "Angle : %-7d\r\n", get_angle());
 
     }
 }
