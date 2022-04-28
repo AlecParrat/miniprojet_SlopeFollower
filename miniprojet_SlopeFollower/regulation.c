@@ -16,7 +16,7 @@
 #define NORMAL false		// fonctionnement normal
 #define ESCAPING true	// echappement d'un mur
 
-#define PRINT 1 //1 pour afficher les variables du régulateur, 0 pour pas afficher
+#define PRINT 0 //1 pour afficher les variables du régulateur, 0 pour pas afficher
 
 #define MOTORS_ON 0 // 1 pour allumer les moteurs, 0 pour les éteindre
 
