@@ -5,14 +5,6 @@
  *      Author: alecp
  */
 
-// Sensor numbers definition
-#define RIGHT_3 2		// IR3 on the body
-#define RIGHT_2 1		// IR2 on the body
-#define RIGHT_1 0		// IR1 on the body
-#define LEFT_1 7		// IR8 on the body
-#define LEFT_2 6		// IR7 on the body
-#define LEFT_3 5		// IR6 on the body
-
 // Proximity treshold
 #define PROXIMITY_TRESHOLD 1500
 
@@ -24,6 +16,14 @@
 #include <sensors/proximity.h>
 #include <chprintf.h>
 #include <stdbool.h>
+
+// Sensor numbers definition
+#define RIGHT_3 2		// IR3 on the body
+#define RIGHT_2 1		// IR2 on the body
+#define RIGHT_1 0		// IR1 on the body
+#define LEFT_1 7		// IR8 on the body
+#define LEFT_2 6		// IR7 on the body
+#define LEFT_3 5		// IR6 on the body
 
 // Proximity alert
 static int8_t proximity_alert = 0;
@@ -78,27 +78,27 @@ static THD_FUNCTION(get_proximity_thd, arg){
 
 		// alert on the right_3 :
 		if (proxy_right_3 > PROXIMITY_TRESHOLD && proxy_right_3 > proxy_right_2){
-			proximity_alert = 1;
+			proximity_alert = R_SIDE;
 		}
 		// alert on the right_2 :
 		else if (proxy_right_2 > PROXIMITY_TRESHOLD && proxy_right_2 > proxy_right_1 && proxy_right_2 > proxy_left_1 && proxy_right_2 > proxy_left_2){
-			proximity_alert = 2;
+			proximity_alert = R_CENTER;
 		}
 		// alert on the right_1 :
 		else if (proxy_right_1 > PROXIMITY_TRESHOLD && proxy_right_1 > proxy_right_2 && proxy_right_1 > proxy_left_1 && proxy_right_1 > proxy_left_2){
-			proximity_alert = 3;
+			proximity_alert = R_FRONT;
 		}
 		// alert on the left_1 :
 		else if (proxy_left_1 > PROXIMITY_TRESHOLD && proxy_left_1 > proxy_right_2 && proxy_left_1 > proxy_right_1 && proxy_left_1 > proxy_left_2){
-			proximity_alert = 4;
+			proximity_alert = L_FRONT;
 		}
 		// alert on the left_2 :
 		else if (proxy_left_2 > PROXIMITY_TRESHOLD && proxy_left_2 > proxy_right_2 && proxy_left_2 > proxy_right_1 && proxy_left_2 > proxy_left_1){
-			proximity_alert = 5;
+			proximity_alert = L_CENTER;
 		}
 		// alert on theleft_3 :
 		else if(proxy_left_3 > PROXIMITY_TRESHOLD && proxy_left_3 > proxy_left_2){
-			proximity_alert = 6;
+			proximity_alert = L_SIDE;
 		}
 		else{
 			proximity_alert = 0;

@@ -8,6 +8,14 @@
 #ifndef PROX_H_
 #define PROX_H_
 
+// dénomination des alertes
+#define R_SIDE 1
+#define R_CENTER 2
+#define R_FRONT 3
+#define L_FRONT 4
+#define L_CENTER 5
+#define L_SIDE 6
+
 //allows to get the value in an other file
 int get_proximity(int sensor_number);
 

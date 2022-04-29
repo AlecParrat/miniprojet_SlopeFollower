@@ -18,12 +18,17 @@
 
 #define PRINT 0 //1 pour afficher les variables du régulateur, 0 pour pas afficher
 
-#define MOTORS_ON 1 // 1 pour allumer les moteurs, 0 pour les éteindre
+#define MOTORS_ON 0 // 1 pour allumer les moteurs, 0 pour les éteindre
 
 //vitesse max du robot [step/s]
 #define SPEED_MAX  1000
 
 #define SPEED_MOY (SPEED_MAX/2) //vitesse moyenne du robot
+
+// pourcentage de tour à faire pour chaque manoeuvre d'esquive
+#define POURCENT_AVANT 50
+#define POURCENT_MILIEU 38
+#define POURCENT_COTE 25
 
 // Nombre de steps pour 1 tour sur lui-meme
 #define STEPS_TOUR 1320
@@ -93,40 +98,40 @@ int16_t regulator(int16_t angle_pente, int16_t angle_consigne, bool reset){
 
 // fonction d'esquive d'obstacles
 // retuourne le nombre de step à effectuer
-int16_t esquive(int8_t alert_number) {
-	int16_t steps_to_do = 0;
+int32_t esquive(int8_t alert_number) {
+	int32_t steps_to_do = 0;
 	int16_t speed = SPEED_MAX;
 
 	switch (alert_number) {
 
 	//définition du mouvement à effectuer
-	case 1 :
-		steps_to_do = STEPS_TOUR/4;
+	case R_SIDE :
+		steps_to_do = STEPS_TOUR * POURCENT_COTE / 100;
 		speed = -SPEED_MAX;
 		break;
 
-	case 2 :
-		steps_to_do = (STEPS_TOUR*3)/8;
+	case R_CENTER :
+		steps_to_do = STEPS_TOUR * POURCENT_MILIEU / 100;
 		speed = -SPEED_MAX;
 		break;
 
-	case 3 :
-		steps_to_do = STEPS_TOUR/2;
+	case R_FRONT :
+		steps_to_do = STEPS_TOUR * POURCENT_AVANT / 100;
 		speed = -SPEED_MAX;
 		break;
 
-	case 4 :
-		steps_to_do = STEPS_TOUR/2;
+	case L_FRONT :
+		steps_to_do = STEPS_TOUR * POURCENT_AVANT / 100;
 		speed = SPEED_MAX;
 		break;
 
-	case 5 :
-		steps_to_do = (STEPS_TOUR*3)/8;
+	case L_CENTER :
+		steps_to_do = STEPS_TOUR * POURCENT_MILIEU / 100;
 		speed = SPEED_MAX;
 		break;
 
-	case 6 :
-		steps_to_do = STEPS_TOUR/4;
+	case L_SIDE :
+		steps_to_do = STEPS_TOUR * POURCENT_COTE / 100;
 		speed = SPEED_MAX;
 		break;
 	}
