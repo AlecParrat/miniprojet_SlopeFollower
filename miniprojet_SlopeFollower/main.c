@@ -20,6 +20,7 @@
 #include <sensors/mpu9250.h>
 #include <i2c_bus.h>
 #include <angle.h>
+#include <leds.h>
 
 //inclure main.h dans les fichiers où on utilise les bus
 //inits the message bus, the mutexe and the conditionnal variable used for the communication with the IMU
@@ -57,6 +58,19 @@ static void timer12_start(void){
     gptStartContinuous(&GPTD12, 0xFFFF);
 }
 
+// fonction de gestion des LEDs pour le début/din des calibrations
+void leds_calibration(unsigned int etat) {
+//    set_led(LED3, etat);
+//    set_led(LED7, etat);
+    set_rgb_led(LED2, 100*etat, 100*etat, 100*etat);
+    set_rgb_led(LED4, 100*etat, 100*etat, 100*etat);
+    set_rgb_led(LED6, 100*etat, 100*etat, 100*etat);
+    set_rgb_led(LED8, 100*etat, 100*etat, 100*etat);
+    if (etat == 0) {
+    	set_body_led(1);
+    }
+}
+
 int main(void)
 {
 	/* Initialisations */
@@ -72,14 +86,27 @@ int main(void)
     //starts timer 12
     timer12_start();
 
-    //starts the thread dedicated to the computation of the angle
-    compute_angle_thd_start();
+    //démarre la communication SPI pour l'utilisation des LEDs RGB
+    spi_comm_start();
+
+    // LEDs rouge signalant que le robot commence les calibrations
+    leds_calibration(1);
+
+    // démarrage des capteurs de proximité et de l'IMU, calibrations
+    // le robot doit rester à plat et loin des murs
+    compute_angle_thd_start(); //starts the thread dedicated to the computation of the angle
+    prox_sensors_start(); // démarrage des capteurs de proximité
+
+    //petit temps d'attente par sécurité : 2s
+    //wait(MS2ST(2000)); //bonne fonction ?
+
+
+    //fin des calibrations, le robot peut bouger
+    // LEDs vertes signalant la fin des calibrations
+    leds_calibration(0);
 
     // démarrage de la régulation et des moteurs
     regulator_start();
-
-    // démarrage des capteurs de proximité
-    prox_sensors_start();
 
     /* Infinite loop. */
     while (1) {

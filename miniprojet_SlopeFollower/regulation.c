@@ -11,6 +11,7 @@
 #include <angle.h>
 #include <chprintf.h>
 #include <prox.h>
+#include <leds.h>
 
 // modes de fonctionnement
 #define NORMAL false		// fonctionnement normal
@@ -106,31 +107,37 @@ int32_t esquive(int8_t alert_number) {
 
 	//définition du mouvement à effectuer
 	case R_SIDE :
+		set_led(LED3, 1);
 		steps_to_do = STEPS_TOUR * POURCENT_COTE / 100;
 		speed = -SPEED_MAX;
 		break;
 
 	case R_CENTER :
+		set_rgb_led(LED2, 50, 0, 0);
 		steps_to_do = STEPS_TOUR * POURCENT_MILIEU / 100;
 		speed = -SPEED_MAX;
 		break;
 
 	case R_FRONT :
+		set_led(LED1, 1);
 		steps_to_do = STEPS_TOUR * POURCENT_AVANT / 100;
 		speed = -SPEED_MAX;
 		break;
 
 	case L_FRONT :
+		set_led(LED1, 1);
 		steps_to_do = STEPS_TOUR * POURCENT_AVANT / 100;
 		speed = SPEED_MAX;
 		break;
 
 	case L_CENTER :
+		set_rgb_led(LED8, 50, 0, 0);
 		steps_to_do = STEPS_TOUR * POURCENT_MILIEU / 100;
 		speed = SPEED_MAX;
 		break;
 
 	case L_SIDE :
+		set_led(LED7, 1);
 		steps_to_do = STEPS_TOUR * POURCENT_COTE / 100;
 		speed = SPEED_MAX;
 		break;
@@ -201,6 +208,7 @@ static THD_FUNCTION(Regulator, arg) {
 				right_motor_set_speed(SPEED_MOY - delta_speed);
 				left_motor_set_speed(SPEED_MOY + delta_speed);
 			}
+			clear_leds();
 		}
 
 		//frequence du thread
