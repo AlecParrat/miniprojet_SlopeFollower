@@ -42,7 +42,20 @@
 #define KI 0.01
 #define KD 0
 
-// régulateur PID
+/*
+ * Régulateur PID
+ * l'entrée est la direction (angle) de la pente
+ * La sortie est la différence de vitesse à appliquer aux moteurs
+ * Une différence de vitesse variable signifie des virages plus ou moins serrés
+ *
+ * \param angle_pente : angle mesuré
+ *
+ * \param angle_consigne : angle à atteindre (toujours 0 ici)
+ *
+ * \param reset : si booléen true : réinitialisation des variables du régulateur
+ *
+ * \return	commande différentielle des moteurs
+ */
 int16_t regulator(int16_t angle_pente, int16_t angle_consigne, bool reset){
 	int16_t err = 0; //error relativ to consigne
 	float prop = 0; // proportional term, float because can be small
@@ -99,6 +112,15 @@ int16_t regulator(int16_t angle_pente, int16_t angle_consigne, bool reset){
 
 // fonction d'esquive d'obstacles
 // retuourne le nombre de step à effectuer
+/*
+ * Foncion d'esquive des murs
+ * Définit le sens des moteurs (robot tourne sur lui-même) ainsi que la durée du virage à effecuer
+ * vitesse des moteurs directement entré durant la fonction
+ *
+ * \param alert_number : Numéro correspondant à la direction du mur à esquiver
+ *
+ * \retun : nombre de steps à effectuer pour finir la manoeuvre d'esquive
+ */
 int32_t esquive(int8_t alert_number) {
 	int32_t steps_to_do = 0;
 	int16_t speed = SPEED_MAX;
@@ -152,11 +174,13 @@ int32_t esquive(int8_t alert_number) {
 	return abs(steps_to_do);
 }
 
-// thread de gestion du déplacement
-// définit le mode de déplacement
-// gestion du PID pour la commande des moteurs
-// définit la différence de vitesse entre les deux roues (virage)
-// gestion des manoeuvres d'esquive
+/*
+ * thread de gestion du déplacement
+ * définit le mode de déplacement (normal - esquive)
+ * gestion du PID pour la commande des moteurs
+ * entre la vitesse des moteur en fonction de la différence de vitesse entre les deux roues (virage)
+ * gestion des manoeuvres d'esquive
+ */
 static THD_WORKING_AREA(waRegulator, 256);
 static THD_FUNCTION(Regulator, arg) {
 
@@ -216,7 +240,9 @@ static THD_FUNCTION(Regulator, arg) {
 	}
 }
 
-//démarrage du thread de régulation
+/*
+ * démarrage du thread de régulation
+ */
 void regulator_start(void){
     motors_init();
 	chThdCreateStatic(waRegulator, sizeof(waRegulator), NORMALPRIO, Regulator, NULL);

@@ -38,10 +38,14 @@ static int8_t proximity_alert = 0;
 // 5 : left_2 alert
 // 6 : left_3 alert
 
-int8_t get_prox_alert(void){
-	return proximity_alert;
-}
-
+/*
+ * test function, unused
+ * allows to  get the value of the proximity in an other file
+ *
+ * \param sensor_number		number of the sensor to read
+ *
+ * \return		value mesured by the sensor
+ */
 int get_proximity(int sensor_number) {
 	//sans calibration
 	//return get_prox(sensor_number);
@@ -50,7 +54,18 @@ int get_proximity(int sensor_number) {
 	return get_calibrated_prox(sensor_number);
 }
 
-//thread dedicated to the acquisition of the proximity with the 4 sensors at the front of the robot (IR 1, 2, 7, 8)
+/*
+ * allows to  get the value of the proximity alert in an other file
+ *
+ * \return number of current proximity alert
+ */
+int8_t get_prox_alert(void){
+	return proximity_alert;
+}
+
+/*
+ * thread dedicated to the acquisition of the proximity with the 4 sensors at the front of the robot (IR 1, 2, 7, 8)
+ */
 static THD_WORKING_AREA(get_proximity_thd_wa, 1024);
 static THD_FUNCTION(get_proximity_thd, arg){
 
@@ -115,6 +130,9 @@ static THD_FUNCTION(get_proximity_thd, arg){
 	}
 }
 
+/*
+ * Initialisation an calibration of the proximity sensors
+ */
 void prox_sensors_start(void) {
 	proximity_start();
 	calibrate_ir();

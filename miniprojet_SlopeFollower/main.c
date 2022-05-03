@@ -58,7 +58,11 @@ static void timer12_start(void){
     gptStartContinuous(&GPTD12, 0xFFFF);
 }
 
-// fonction de gestion des LEDs pour le début/din des calibrations
+/*
+ * fonction de gestion des LEDs indicatives de début/fin des calibrations
+ *
+ * \param etat	etat que l'on souhaite afficher		1 : calibration begin	2: calibration end
+ */
 void leds_calibration(unsigned int etat) {
 //    set_led(LED3, etat);
 //    set_led(LED7, etat);

@@ -19,7 +19,24 @@
 
 static int16_t angle = 0; 					//measured angle
 
-//computes and returns the angle according to the defined convention (left : [-180°, 0°[ ; right : ]0°, +180°]
+/*
+ * computes and returns the slope angle according to the defined convention (left : [-180°, 0°[ ; right : ]0°, +180°])
+ *
+ *         BACK
+ *         ####
+ *      #180/-180#
+ *    #            #
+ * R # 90  TOP  -90 # L
+ *    #    VIEW    #
+ *      #   0    #
+ *         ####
+ *         FRONT
+ *
+ * The slope angle is the direction of descending slope in an inclined plane
+ * In a flat surface, it is undefined, in that there is an inclination threshold and it is put to 0
+ *
+ * \return	computed angle
+ */
 int16_t compute_angle(void){
 
 	int16_t acc_x = 0;					//acceleration on the X axis
@@ -69,13 +86,18 @@ int16_t compute_angle(void){
 	return(angle);
 }
 
-//allows to get the measured angle value from another file
+/*
+ * allows to get the last computed angle value from another file
+ *
+ * \return	computed angle
+ */
 int16_t get_angle(void) {
 	return angle;
 }
 
-
-//thread dedicated to the computation of the angle
+/*
+ * thread dedicated to the timing of the slope angle computation
+ */
 static THD_WORKING_AREA(compute_angle_thd_wa, 1024);
 static THD_FUNCTION(compute_angle_thd, arg){
 
@@ -85,6 +107,7 @@ static THD_FUNCTION(compute_angle_thd, arg){
 	systime_t time;
 
 	while(1){
+		time = chVTGetSystemTime();
 
     	angle=compute_angle();
 
@@ -92,7 +115,9 @@ static THD_FUNCTION(compute_angle_thd, arg){
 	}
 }
 
-//inits and calibrates the IMU, starts the thread that computes the angle
+/*
+ * inits and calibrates the IMU, starts the thread that computes the angle
+ */
 void compute_angle_thd_start(){
 
 	//starts the IMU
