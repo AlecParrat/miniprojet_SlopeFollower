@@ -8,7 +8,7 @@
 #ifndef PROX_H_
 #define PROX_H_
 
-// dénomination des alertes
+// proximity alerts definition
 #define R_SIDE 1
 #define R_CENTER 2
 #define R_FRONT 3

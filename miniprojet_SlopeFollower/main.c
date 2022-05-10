@@ -22,8 +22,8 @@
 #include <angle.h>
 #include <leds.h>
 
-//inclure main.h dans les fichiers où on utilise les bus
-//inits the message bus, the mutexe and the conditionnal variable used for the communication with the IMU
+// include main.h in the file where the bus is used
+// inits the message bus, the mutexe and the conditionnal variable used for the communication with the IMU
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
@@ -59,25 +59,23 @@ static void timer12_start(void){
 }
 
 /*
- * fonction de gestion des LEDs indicatives de début/fin des calibrations
+ * function controlling the LEDs
+ * Two red LEDs turn on when the calibration starts
+ * When the calibration ends, the red LEDs turn off and the body LEDs turn on
  *
- * \param etat	etat que l'on souhaite afficher		1 : calibration begin	2: calibration end
+ * \param state		state the we want to display		1 : calibration begin	2: calibration end
  */
-void leds_calibration(unsigned int etat) {
-//    set_led(LED3, etat);
-//    set_led(LED7, etat);
-    set_rgb_led(LED2, 100*etat, 100*etat, 100*etat);
-    set_rgb_led(LED4, 100*etat, 100*etat, 100*etat);
-    set_rgb_led(LED6, 100*etat, 100*etat, 100*etat);
-    set_rgb_led(LED8, 100*etat, 100*etat, 100*etat);
-    if (etat == 0) {
+void leds_calibration(unsigned int state) {
+    set_led(LED3, state);
+    set_led(LED7, state);
+    if (state == 0) {
     	set_body_led(1);
     }
 }
 
 int main(void)
 {
-	/* Initialisations */
+	/* Initializations */
 
 	//inits the inter-process communication bus
 	messagebus_init(&bus, &bus_lock, &bus_condvar);
@@ -90,31 +88,24 @@ int main(void)
     //starts timer 12
     timer12_start();
 
-    //démarre la communication SPI pour l'utilisation des LEDs RGB
-    spi_comm_start();
-
-    // LEDs rouge signalant que le robot commence les calibrations
+    // red LEDs turn on
     leds_calibration(1);
 
-    // démarrage des capteurs de proximité et de l'IMU, calibrations
-    // le robot doit rester à plat et loin des murs
-    compute_angle_thd_start(); //starts the thread dedicated to the computation of the angle
-    prox_sensors_start(); // démarrage des capteurs de proximité
+    // sensors calibration and threads starts
+    // the robot should stay on a flat surface and far from the walls
+    compute_angle_thd_start(); // starts the thread dedicated to the computation of the angle
+    prox_sensors_start(); // starts the thread dedicated to the proximity sensors
 
-    //petit temps d'attente par sécurité : 2s
-    //wait(MS2ST(2000)); //bonne fonction ?
-
-
-    //fin des calibrations, le robot peut bouger
-    // LEDs vertes signalant la fin des calibrations
+    // end of calibrations
+    // bodyLEDs turn on
     leds_calibration(0);
 
-    // démarrage de la régulation et des moteurs
+    // starts the thread dedicated to the regulation and motors control
     regulator_start();
 
     /* Infinite loop. */
     while (1) {
-
+    	chThdSleepMilliseconds(1000);
     }
 }
 

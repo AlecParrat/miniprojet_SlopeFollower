@@ -10,6 +10,7 @@
 
 int16_t compute_angle(void);
 int16_t get_angle(void);
+bool get_slope(void);
 void compute_angle_thd_start(void);
 
 #endif /* ANGLE_H_ */

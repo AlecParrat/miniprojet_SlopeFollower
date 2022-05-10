@@ -13,84 +13,90 @@
 #include <prox.h>
 #include <leds.h>
 
-// modes de fonctionnement
-#define NORMAL false		// fonctionnement normal
-#define ESCAPING true	// echappement d'un mur
+// operating modes
+#define NORMAL false	// standart
+#define ESCAPING true	// proximity alert : escape maneuver
 
-#define PRINT 0 //1 pour afficher les variables du régulateur, 0 pour pas afficher
+#define PRINT 0 // 1 to print the regulator variable in the serial, 0 to stop the printing
 
-#define MOTORS_ON 0 // 1 pour allumer les moteurs, 0 pour les éteindre
+#define MOTORS_ON 0 // 1 to turn the motors on, 0 to turn them of
 
-//vitesse max du robot [step/s]
+#define ARW true // true to activate the Anti Reset Windup
+
+// wheels maximum speed [step/s]
 #define SPEED_MAX  1000
 
-#define SPEED_MOY (SPEED_MAX/2) //vitesse moyenne du robot
+#define SPEED_MOY (SPEED_MAX/2) // wheel average speed during the normal operations
 
-// pourcentage de tour à faire pour chaque manoeuvre d'esquive
-#define POURCENT_AVANT 50
-#define POURCENT_MILIEU 38
-#define POURCENT_COTE 25
+// percentage of turn to do during escape maneuvers
+#define PERCENT_FRONT 50
+#define PERCENT_MIDDLE 38
+#define PERCENT_SIDE 25
 
-// Nombre de steps pour 1 tour sur lui-meme
-#define STEPS_TOUR 1320
+// number of steps to do a 360° turn
+#define STEPS_TURN 1320
 
-//période d'appel du régulateur [ms]
+// period of the regulation thread [ms]
 #define REGUL_PERIOD 10 // 10 ms -> 100 Hz
 
-//constantes du régulateur
+// regulator constants
 #define KP 5
 #define KI 0.01
-#define KD 0
 
 /*
- * Régulateur PID
- * l'entrée est la direction (angle) de la pente
- * La sortie est la différence de vitesse à appliquer aux moteurs
- * Une différence de vitesse variable signifie des virages plus ou moins serrés
+ * PI regulator
+ * input : slope direction (angle) relative to the front of the robot
+ * output : speed difference to apply to the motors
+ * A variable speed diference signify controllable turns
  *
- * \param angle_pente : angle mesuré
+ * \param mesured_angle : slope angle measured by the angle thread
  *
- * \param angle_consigne : angle à atteindre (toujours 0 ici)
+ * \param angle_to_reach : angle to reach (always 0 here)
  *
- * \param reset : si booléen true : réinitialisation des variables du régulateur
+ * \param reset : if true : reset of the regulator variables
  *
- * \return	commande différentielle des moteurs
+ * \return	speed difference to apply to the motors
  */
-int16_t regulator(int16_t angle_pente, int16_t angle_consigne, bool reset){
-	int16_t err = 0; //error relativ to consigne
-	float prop = 0; // proportional term, float because can be small
-
-	static int16_t delta_speed = 0;//to compute (to keep for the ARW)
+int16_t regulator(int16_t mesured_angle, int16_t angle_to_reach, bool reset){
+	int16_t err = 0; // angle error
+	float prop = 0; // proportional term, float because order depends on the KP
+	float integr = 0; // integral term, float because order depends on the KI
+	static float integr_last = 0; // last value of the integral term
+	static int16_t delta_speed = 0;// output to compute (to keep for the ARW)
 	static int16_t delta_speed_ini = 0; // delta speed before limit check (to keep for the ARW)
-	static float integr = 0; // integral term, float because can be small
-	static int16_t err_pre = 0; //previous error for the differential term
 
-	// Variables à remettre à 0 après une pause de régualtion
-	if(reset) {
-		integr = 0;
-		err_pre = 0;
-	}
-
-	err = angle_pente - angle_consigne;
+	err = mesured_angle - angle_to_reach;
 
 	prop = KP * (float)err;
-
-	if(KI != 0) { // inutile de faire ce calcul si KI = 0
-		//intégrateur avec anti-reset windup commenté
-		integr += KI * (float)err; //*(prop - (delta_speed_ini-delta_speed));
+	if(KI != 0) { // useless if KI = 0
+		integr = integr_last + KI * (float)err;
 	}
 
-	//calcul de la commande, transformation en float pour plus de précision avant la somme
-	delta_speed_ini = prop + integr + KD * (float)(err - err_pre);
-	err_pre = err;
+	// integral term to reset if needed
+	if(reset) {
+		integr = 0;
+		integr_last = 0;
+	}
 
-	//gestion des limites
-	if (delta_speed_ini > (2*SPEED_MOY)) {
-		delta_speed = (2*SPEED_MOY);
-	} else if (delta_speed_ini < -(2*SPEED_MOY)) {
-		delta_speed = -(2*SPEED_MOY);
+	delta_speed_ini = prop + integr; // command computation
+
+	// limits management
+	if (delta_speed_ini > SPEED_MAX) {
+		delta_speed = SPEED_MAX;
+	} else if (delta_speed_ini < -SPEED_MAX) {
+		delta_speed = -SPEED_MAX;
 	} else {
 		delta_speed = delta_speed_ini;
+	}
+
+	// ARW management, useless if KI = 0
+	if (KI != 0) {
+		// if ARW activated AND there is saturation AND integration term would get bigger
+		if((ARW == true) && (delta_speed != delta_speed_ini) && abs(integr) >  abs(integr_last)) {
+			integr = integr_last; // integral term, can't get bigger
+		} else {
+			integr_last = integr; // normally stock integral term in the last one
+		}
 	}
 
 	if(PRINT) {
@@ -99,73 +105,72 @@ int16_t regulator(int16_t angle_pente, int16_t angle_consigne, bool reset){
 //		pourcent_P = 100*prop/delta_speed_ini;
 //		pourcent_I = 100 - pourcent_P;
 
-		chprintf((BaseSequentialStream *)&SD3, "Angle : %4d     ", angle_pente);
+		chprintf((BaseSequentialStream *)&SD3, "Angle : %4d     ", mesured_angle);
 		chprintf((BaseSequentialStream *)&SD3, "Propo : %6.1f     ", prop);
 //		chprintf((BaseSequentialStream *)&SD3, "%d%%  |  ", pourcent_P);
 		chprintf((BaseSequentialStream *)&SD3, "Integ : %6.1f     ", integr);
 //		chprintf((BaseSequentialStream *)&SD3, "%d%%  |  ", pourcent_I);
-		chprintf((BaseSequentialStream *)&SD3, "D_spe : %4d  \r\n", delta_speed_ini);
 	}
 
 	return delta_speed;
 }
 
-// fonction d'esquive d'obstacles
-// retuourne le nombre de step à effectuer
 /*
- * Foncion d'esquive des murs
- * Définit le sens des moteurs (robot tourne sur lui-même) ainsi que la durée du virage à effecuer
- * vitesse des moteurs directement entré durant la fonction
+ * Escape maneuvers function
+ * Defines motors sense (robot is rotating without advancing)
+ * Defines the duration of turn
  *
- * \param alert_number : Numéro correspondant à la direction du mur à esquiver
+ * \param alert_number : Position of proximity alert
  *
- * \retun : nombre de steps à effectuer pour finir la manoeuvre d'esquive
+ * \retun : number of steps to do to finish the escape maneuver
  */
-int32_t esquive(int8_t alert_number) {
+int32_t escape(int8_t alert_number) {
 	int32_t steps_to_do = 0;
 	int16_t speed = SPEED_MAX;
 
 	switch (alert_number) {
 
-	//définition du mouvement à effectuer
-	case R_SIDE :
+	// choice of movement to do
+	case R_SIDE : // -90°
 		set_led(LED3, 1);
-		steps_to_do = STEPS_TOUR * POURCENT_COTE / 100;
+		steps_to_do = STEPS_TURN * PERCENT_SIDE / 100;
 		speed = -SPEED_MAX;
 		break;
 
-	case R_CENTER :
-		set_rgb_led(LED2, 50, 0, 0);
-		steps_to_do = STEPS_TOUR * POURCENT_MILIEU / 100;
-		speed = -SPEED_MAX;
-		break;
-
-	case R_FRONT :
+	case R_CENTER : // ~ -135°
 		set_led(LED1, 1);
-		steps_to_do = STEPS_TOUR * POURCENT_AVANT / 100;
+		set_led(LED3, 1);
+		steps_to_do = STEPS_TURN * PERCENT_MIDDLE / 100;
 		speed = -SPEED_MAX;
 		break;
 
-	case L_FRONT :
+	case R_FRONT : // -180°
 		set_led(LED1, 1);
-		steps_to_do = STEPS_TOUR * POURCENT_AVANT / 100;
+		steps_to_do = STEPS_TURN * PERCENT_FRONT / 100;
+		speed = -SPEED_MAX;
+		break;
+
+	case L_FRONT : // 180°
+		set_led(LED1, 1);
+		steps_to_do = STEPS_TURN * PERCENT_FRONT / 100;
 		speed = SPEED_MAX;
 		break;
 
-	case L_CENTER :
-		set_rgb_led(LED8, 50, 0, 0);
-		steps_to_do = STEPS_TOUR * POURCENT_MILIEU / 100;
-		speed = SPEED_MAX;
-		break;
-
-	case L_SIDE :
+	case L_CENTER : // ~135°
+		set_led(LED1, 1);
 		set_led(LED7, 1);
-		steps_to_do = STEPS_TOUR * POURCENT_COTE / 100;
+		steps_to_do = STEPS_TURN * PERCENT_MIDDLE / 100;
+		speed = SPEED_MAX;
+		break;
+
+	case L_SIDE : // 180°
+		set_led(LED7, 1);
+		steps_to_do = STEPS_TURN * PERCENT_SIDE / 100;
 		speed = SPEED_MAX;
 		break;
 	}
 
-	//gestion des moteurs
+	// motor command
 	left_motor_set_speed(speed);
 	right_motor_set_speed(-speed);
 	left_motor_set_pos(0);
@@ -175,11 +180,13 @@ int32_t esquive(int8_t alert_number) {
 }
 
 /*
- * thread de gestion du déplacement
- * définit le mode de déplacement (normal - esquive)
- * gestion du PID pour la commande des moteurs
- * entre la vitesse des moteur en fonction de la différence de vitesse entre les deux roues (virage)
- * gestion des manoeuvres d'esquive
+ * movement command thread
+ * defines movement mode (normal / escaping)
+ * calls the PI regulator in normal mode
+ * enters the speed for each motor
+ * calls the escape function if a wall is close
+ * controls the escape maneuvers duration
+ * important that the regulator runs at a precise frequency : high priority
  */
 static THD_WORKING_AREA(waRegulator, 256);
 static THD_FUNCTION(Regulator, arg) {
@@ -189,45 +196,40 @@ static THD_FUNCTION(Regulator, arg) {
 
 	systime_t time;
 
-	bool mode_fonc = NORMAL; // mode de fonctionnement
-	int8_t prox_alert = 0; //variable controlée par le thread des capteurs de proximité
-	int16_t steps_to_do = 0; //step à faire pour l'esquive
-
-	// différence de vitesse entre les roues
-	int16_t delta_speed = 0;
-
-	// consigne d'angle à obtenir entre l'inclinaison et le sens de marche
-	int16_t angle_consigne = 0;
+	bool mode_fonc = NORMAL; // movement mode
+	int8_t prox_alert = 0; // alerts returned by the proximity sensors
+	int16_t steps_to_do = 0; // steps to do to finish an escape maneuver
+	int16_t delta_speed = 0; // speed difference between the motors in normal mode
+	int16_t angle_consigne = 0; // angle desired between the slope and the front of the robot
 
 	while(1) {
 		time = chVTGetSystemTime();
 
-		//récupération des alertes de proximité (inutile si en cours d'estquive
+		// see if there is a proximity alert
 		if(mode_fonc == NORMAL) {
 			prox_alert = get_prox_alert();
 		}
 
-		//gestion du mode de fonctionnement
-		if ((mode_fonc == NORMAL) && (prox_alert == 0)) { // mode normal
-			// appel du régulateur, la fct get_angle va chercher l'angle mesuré
-			delta_speed = regulator(get_angle(), angle_consigne, false);
-
-			// calcul de la vitesse de rotation à transmettre à chaque moteur
-			// envoi de la consigne aux moteurs
+		// functioning modes control
+		if ((mode_fonc == NORMAL) && (prox_alert == 0)) { // normal mode
+			// call of the PI regulator, with the last computed angle
+			// if the slope is small, resets the integral term of the regulator
+			delta_speed = regulator(get_angle(), angle_consigne, get_slope());
+			// motors command with the regulated value
 			if(MOTORS_ON) {
 				right_motor_set_speed(SPEED_MOY - delta_speed);
 				left_motor_set_speed(SPEED_MOY + delta_speed);
 			}
 
-		} else if ((mode_fonc == NORMAL) && (prox_alert != 0)) { // manoeuvre d'esquive
+		} else if ((mode_fonc == NORMAL) && (prox_alert != 0)) { // escape maneuver begins
 			mode_fonc = ESCAPING;
-			steps_to_do = esquive(prox_alert); // démarrage de la manoeuvre d'esquive
+			steps_to_do = escape(prox_alert); // start of the maneuver
 
-		} else if ((mode_fonc == ESCAPING) && (abs(left_motor_get_pos()) >= steps_to_do)) { // fin de l'esquive
+		} else if ((mode_fonc == ESCAPING) && (abs(left_motor_get_pos()) >= steps_to_do)) { // escape maneuver ends
 			left_motor_set_speed(0);
 			right_motor_set_speed(0);
 			mode_fonc = NORMAL;
-			delta_speed = regulator(get_angle(), angle_consigne, true); //appel du régulateur et reset des variable
+			delta_speed = regulator(get_angle(), angle_consigne, true); // call the regulator and resets its variable
 			if(MOTORS_ON) {
 				right_motor_set_speed(SPEED_MOY - delta_speed);
 				left_motor_set_speed(SPEED_MOY + delta_speed);
@@ -235,15 +237,14 @@ static THD_FUNCTION(Regulator, arg) {
 			clear_leds();
 		}
 
-		//frequence du thread
 		chThdSleepUntilWindowed(time, time + MS2ST(REGUL_PERIOD));
 	}
 }
 
 /*
- * démarrage du thread de régulation
+ * regulator thread starts
  */
 void regulator_start(void){
     motors_init();
-	chThdCreateStatic(waRegulator, sizeof(waRegulator), NORMALPRIO, Regulator, NULL);
+	chThdCreateStatic(waRegulator, sizeof(waRegulator), NORMALPRIO + 1, Regulator, NULL);
 }

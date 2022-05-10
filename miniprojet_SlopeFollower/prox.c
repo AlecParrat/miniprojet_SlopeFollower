@@ -5,17 +5,19 @@
  *      Author: alecp
  */
 
-// Proximity treshold
-#define PROXIMITY_TRESHOLD 1500
-
-#define GET_PROXIMITY_PERIOD 100
-
 #include <main.h>
 #include <prox.h>
 #include <msgbus/messagebus.h>
 #include <sensors/proximity.h>
 #include <chprintf.h>
 #include <stdbool.h>
+
+#define PROX_ACTIVATED true // true to activate proximity alerts
+
+// Proximity threshold : above this value, a proximity alert is enabled
+#define PROXIMITY_TRESHOLD 800
+
+#define PROXIMITY_PERIOD 100 // period of the proximity thread (in ms)
 
 // Sensor numbers definition
 #define RIGHT_3 2		// IR3 on the body
@@ -25,7 +27,7 @@
 #define LEFT_2 6		// IR7 on the body
 #define LEFT_3 5		// IR6 on the body
 
-// Proximity alert
+// Proximity alert variable
 static int8_t proximity_alert = 0;
 
 // Alert values :
@@ -47,10 +49,10 @@ static int8_t proximity_alert = 0;
  * \return		value mesured by the sensor
  */
 int get_proximity(int sensor_number) {
-	//sans calibration
-	//return get_prox(sensor_number);
+	// without calibration
+	// return get_prox(sensor_number);
 
-	//avec calibration
+	// with calibration
 	return get_calibrated_prox(sensor_number);
 }
 
@@ -84,6 +86,8 @@ static THD_FUNCTION(get_proximity_thd, arg){
 
 	while(1){
 
+		time = chVTGetSystemTime();
+
 		proxy_right_3 = get_proximity(RIGHT_3);
 		proxy_right_2 = get_proximity(RIGHT_2);
 		proxy_right_1 = get_proximity(RIGHT_1);
@@ -111,7 +115,7 @@ static THD_FUNCTION(get_proximity_thd, arg){
 		else if (proxy_left_2 > PROXIMITY_TRESHOLD && proxy_left_2 > proxy_right_2 && proxy_left_2 > proxy_right_1 && proxy_left_2 > proxy_left_1){
 			proximity_alert = L_CENTER;
 		}
-		// alert on theleft_3 :
+		// alert on the left_3 :
 		else if(proxy_left_3 > PROXIMITY_TRESHOLD && proxy_left_3 > proxy_left_2){
 			proximity_alert = L_SIDE;
 		}
@@ -119,19 +123,24 @@ static THD_FUNCTION(get_proximity_thd, arg){
 			proximity_alert = 0;
 		}
 
+		// possibility to deactivate proximity alerts
+		if (PROX_ACTIVATED == false) {
+			proximity_alert = 0;
+		}
+
 		// uncomment to print the alert value
-		//chprintf((BaseSequentialStream *)&SD3, "Alerte : %d\r\n", proximity_alert);
+		// chprintf((BaseSequentialStream *)&SD3, "Alerte : %d\r\n", proximity_alert);
 
 		// uncomment to print the sensors value
 		// chprintf((BaseSequentialStream *)&SD3, "right_3 = %d right_2 = %d right_1 = %d left_1 = %d left_2 = %d left_3 = %d\r\n",
 		// proxy_right_3, proxy_right_2, proxy_right_1, proxy_left_1, proxy_left_2, proxy_left_3);
 
-		chThdSleepUntilWindowed(time, time + MS2ST(GET_PROXIMITY_PERIOD));
+		chThdSleepUntilWindowed(time, time + MS2ST(PROXIMITY_PERIOD));
 	}
 }
 
 /*
- * Initialisation an calibration of the proximity sensors
+ * Initialization and calibration of the proximity sensors
  */
 void prox_sensors_start(void) {
 	proximity_start();
