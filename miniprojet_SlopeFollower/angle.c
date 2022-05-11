@@ -9,14 +9,30 @@
 #include <main.h>
 
 #define PI 3.14
-#define COMPUTE_ANGLE_PERIOD 10 // period (in ms) of the thread that computes the angle
+#define COMPUTE_ANGLE_PERIOD 20 // period (in ms) of the thread that computes the angle
 
 // accelerometer axis
 #define X_AXIS 0
 #define Y_AXIS 1
 #define Z_AXIS 2
 
-#define INCL_LIMIT 400 // inclination threshold, if the slope isn't sufficient, the angle is 0
+#define INCL_LIMIT 300 // inclination threshold, if the slope isn't sufficient, the angle is 0
+
+#define AVERAGE_SIZE 10 // number of value to use to compute the average
+
+int16_t average(int16_t new_value, int16_t* sum, int16_t values[AVERAGE_SIZE], int16_t* counter) {
+
+	(*sum) -= values[*counter]; //remove the oldest value form the sum
+	values[*counter] = new_value; //stock the new value
+	(*sum) += values[*counter]; //add the new value to the sum
+
+	(*counter) ++;
+	if(*counter == AVERAGE_SIZE) {
+		*counter = 0; // cycle the counter
+	}
+
+	return *sum / AVERAGE_SIZE;
+}
 
 static int16_t angle = 0; // computed angle (value to regulate)
 static bool flat = true; // true if the slope is small (useful for the regulator)
@@ -44,10 +60,21 @@ int16_t compute_angle(void){
 	int16_t acc_x = 0;					// acceleration on the X axis
 	int16_t acc_y = 0;					// acceleration on the Y axis
 	int16_t acc_z = 0;					// acceleration on the Z axis
+	int16_t acc_z_mean = 0;				// mean of acceleration Z
+
+	// values to keep for the average computing
+	static int16_t sum_angle = 0;
+	static int16_t values_angle[AVERAGE_SIZE] = {0};
+	static int16_t counter_angle = 0;
+	static int16_t sum_slope = 0;
+	static int16_t values_slope[AVERAGE_SIZE] = {0};
+	static int16_t counter_slope = 0;
 
 	acc_z = get_acc(Z_AXIS) - get_acc_offset(Z_AXIS);
 
-	if(acc_z > INCL_LIMIT) {
+	acc_z_mean = average(acc_z, &sum_slope, values_slope, &counter_slope);
+
+	if(acc_z_mean > INCL_LIMIT) {
 		flat =  false; // slope is sufficient to start regulation
 		acc_x = get_acc(X_AXIS) - get_acc_offset(X_AXIS); // acquires the acceleration on the X axis and retires the offset from the calibration.
 
@@ -85,7 +112,8 @@ int16_t compute_angle(void){
 	// chprintf((BaseSequentialStream *)&SD3, "%Angle_x=%-7d\r\n", angle);
 
 	// uncomment to print z acceleration with offset
-	// chprintf((BaseSequentialStream *)&SD3, "%acc en z =%-7d\r\n", (get_acc(Z) - get_acc_offset(Z)));
+	chprintf((BaseSequentialStream *)&SD3, "%acc en z =%-7d       ", acc_z);
+	chprintf((BaseSequentialStream *)&SD3, "%acc en z moy =%-7d\r\n", acc_z_mean);
 
 	return(angle);
 }
