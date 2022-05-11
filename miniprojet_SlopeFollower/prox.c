@@ -14,12 +14,12 @@
 
 #define PROX_ACTIVATED true // true to activate proximity alerts
 
-// Proximity threshold : above this value, a proximity alert is enabled
+// Proximity threshold : above this proximity value, a proximity alert is enabled
 #define PROXIMITY_TRESHOLD 800
 
 #define PROXIMITY_PERIOD 100 // period of the proximity thread (in ms)
 
-// Sensor numbers definition
+// Sensors numbers definition
 #define RIGHT_3 2		// IR3 on the body
 #define RIGHT_2 1		// IR2 on the body
 #define RIGHT_1 0		// IR1 on the body
@@ -30,8 +30,7 @@
 // Proximity alert variable
 static int8_t proximity_alert = 0;
 
-// Alert values :
-
+/*Alert values*/
 // 0 : no alert
 // 1 : right_1 alert
 // 2 : right_2 alert
@@ -66,7 +65,7 @@ int8_t get_prox_alert(void){
 }
 
 /*
- * thread dedicated to the acquisition of the proximity with the 4 sensors at the front of the robot (IR 1, 2, 7, 8)
+ * thread dedicated to the acquisition of the proximity with the 6 sensors at the front of the robot (IR 1, 2, 3, 6, 7, 8)
  */
 static THD_WORKING_AREA(get_proximity_thd_wa, 1024);
 static THD_FUNCTION(get_proximity_thd, arg){
@@ -100,19 +99,19 @@ static THD_FUNCTION(get_proximity_thd, arg){
 			proximity_alert = R_SIDE;
 		}
 		// alert on the right_2 :
-		else if (proxy_right_2 > PROXIMITY_TRESHOLD && proxy_right_2 > proxy_right_1 && proxy_right_2 > proxy_left_1 && proxy_right_2 > proxy_left_2){
+		else if (proxy_right_2 > PROXIMITY_TRESHOLD && proxy_right_2 > proxy_right_3 && proxy_right_2 > proxy_right_1){
 			proximity_alert = R_CENTER;
 		}
 		// alert on the right_1 :
-		else if (proxy_right_1 > PROXIMITY_TRESHOLD && proxy_right_1 > proxy_right_2 && proxy_right_1 > proxy_left_1 && proxy_right_1 > proxy_left_2){
+		else if (proxy_right_1 > PROXIMITY_TRESHOLD && proxy_right_1 > proxy_right_2 && proxy_right_1 > proxy_left_1){
 			proximity_alert = R_FRONT;
 		}
 		// alert on the left_1 :
-		else if (proxy_left_1 > PROXIMITY_TRESHOLD && proxy_left_1 > proxy_right_2 && proxy_left_1 > proxy_right_1 && proxy_left_1 > proxy_left_2){
+		else if (proxy_left_1 > PROXIMITY_TRESHOLD && proxy_left_1 > proxy_left_2 && proxy_left_1 > proxy_right_1){
 			proximity_alert = L_FRONT;
 		}
 		// alert on the left_2 :
-		else if (proxy_left_2 > PROXIMITY_TRESHOLD && proxy_left_2 > proxy_right_2 && proxy_left_2 > proxy_right_1 && proxy_left_2 > proxy_left_1){
+		else if (proxy_left_2 > PROXIMITY_TRESHOLD && proxy_left_2 > proxy_left_1 && proxy_left_2 > proxy_left_3){
 			proximity_alert = L_CENTER;
 		}
 		// alert on the left_3 :
@@ -128,10 +127,10 @@ static THD_FUNCTION(get_proximity_thd, arg){
 			proximity_alert = 0;
 		}
 
-		// uncomment to print the alert value
+		/*uncomment to print the alert value*/
 		// chprintf((BaseSequentialStream *)&SD3, "Alerte : %d\r\n", proximity_alert);
 
-		// uncomment to print the sensors value
+		/*uncomment to print the proximity sensors value*/
 		// chprintf((BaseSequentialStream *)&SD3, "right_3 = %d right_2 = %d right_1 = %d left_1 = %d left_2 = %d left_3 = %d\r\n",
 		// proxy_right_3, proxy_right_2, proxy_right_1, proxy_left_1, proxy_left_2, proxy_left_3);
 
@@ -140,7 +139,7 @@ static THD_FUNCTION(get_proximity_thd, arg){
 }
 
 /*
- * Initialization and calibration of the proximity sensors
+ * Initializes and calibrates the proximity sensors, starts the thread dedicated to the alert of proximity
  */
 void prox_sensors_start(void) {
 	proximity_start();

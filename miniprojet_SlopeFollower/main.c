@@ -22,8 +22,8 @@
 #include <angle.h>
 #include <leds.h>
 
-// include main.h in the file where the bus is used
-// inits the message bus, the mutexe and the conditionnal variable used for the communication with the IMU
+// inits the message bus, the mutexe and the conditionnal variable used for the communication with the IMU and the proximity sensors
+// It is necessary to include main.h in the files where the bus is used
 messagebus_t bus;
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
@@ -63,7 +63,7 @@ static void timer12_start(void){
  * Two red LEDs turn on when the calibration starts
  * When the calibration ends, the red LEDs turn off and the body LEDs turn on
  *
- * \param state		state the we want to display		1 : calibration begin	2: calibration end
+ * \param state		state that we want to display		1 : calibration begin	2: calibration end
  */
 void leds_calibration(unsigned int state) {
     set_led(LED3, state);
@@ -91,10 +91,10 @@ int main(void)
     // red LEDs turn on
     leds_calibration(1);
 
-    // sensors calibration and threads starts
+    // sensors calibration and threads start
     // the robot should stay on a flat surface and far from the walls
-    compute_angle_thd_start(); // starts the thread dedicated to the computation of the angle
-    prox_sensors_start(); // starts the thread dedicated to the proximity sensors
+    compute_angle_thd_start(); // calibrates the IMU and starts the thread dedicated to the computation of the angle
+    prox_sensors_start(); // calibrates the proximity sensors and starts the thread dedicated to the proximity sensors
 
     // end of calibrations
     // bodyLEDs turn on
