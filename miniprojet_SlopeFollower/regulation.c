@@ -13,15 +13,14 @@
 #include <prox.h>
 #include <leds.h>
 
+// customizable parameters
+#define PRINT 0 // 1 to print the regulator variable in the serial, 0 to stop the printing
+#define MOTORS_ON 1 // 1 to turn the motors on, 0 to turn them of
+#define ARW true // true to activate the Anti Reset Windup
+
 // operating modes
 #define NORMAL false	// standart
 #define ESCAPING true	// proximity alert : escape maneuver
-
-#define PRINT 0 // 1 to print the regulator variable in the serial, 0 to stop the printing
-
-#define MOTORS_ON 0 // 1 to turn the motors on, 0 to turn them of
-
-#define ARW true // true to activate the Anti Reset Windup
 
 // wheels maximum speed [step/s]
 #define SPEED_MAX  1000
