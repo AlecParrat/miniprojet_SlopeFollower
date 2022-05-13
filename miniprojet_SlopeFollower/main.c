@@ -88,6 +88,9 @@ int main(void)
     //starts timer 12
     timer12_start();
 
+    //sleep before calibration, to allow the user to remove their hands
+    chThdSleepMilliseconds(2000);
+
     // red LEDs turn on
     leds_calibration(1);
 
@@ -95,6 +98,9 @@ int main(void)
     // the robot should stay on a flat surface and far from the walls
     compute_angle_thd_start(); // calibrates the IMU and starts the thread dedicated to the computation of the angle
     prox_sensors_start(); // calibrates the proximity sensors and starts the thread dedicated to the proximity sensors
+
+    //sleep between calibration and motors start
+    chThdSleepMilliseconds(1000);
 
     // end of calibrations
     // bodyLEDs turn on

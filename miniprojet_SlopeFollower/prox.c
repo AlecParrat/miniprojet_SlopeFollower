@@ -11,13 +11,15 @@
 #include <sensors/proximity.h>
 #include <chprintf.h>
 #include <stdbool.h>
+#include <leds.h>
 
 #define PROX_ACTIVATED true // true to activate proximity alerts
 
 // Proximity threshold : above this proximity value, a proximity alert is enabled
-#define PROXIMITY_TRESHOLD 800
+#define PROXIMITY_TRESHOLD 600
 
-#define PROXIMITY_PERIOD 100 // period of the proximity thread (in ms)
+// measured time to execute thread content : 3 us
+#define PROXIMITY_PERIOD 50 // period of the proximity thread (in ms)
 
 // Sensors numbers definition
 #define RIGHT_3 2		// IR3 on the body
@@ -87,6 +89,8 @@ static THD_FUNCTION(get_proximity_thd, arg){
 
 		time = chVTGetSystemTime();
 
+		//set_front_led(1);
+
 		proxy_right_3 = get_proximity(RIGHT_3);
 		proxy_right_2 = get_proximity(RIGHT_2);
 		proxy_right_1 = get_proximity(RIGHT_1);
@@ -134,6 +138,8 @@ static THD_FUNCTION(get_proximity_thd, arg){
 		// chprintf((BaseSequentialStream *)&SD3, "right_3 = %d right_2 = %d right_1 = %d left_1 = %d left_2 = %d left_3 = %d\r\n",
 		// proxy_right_3, proxy_right_2, proxy_right_1, proxy_left_1, proxy_left_2, proxy_left_3);
 
+		//set_front_led(0);
+
 		chThdSleepUntilWindowed(time, time + MS2ST(PROXIMITY_PERIOD));
 	}
 }
@@ -144,5 +150,6 @@ static THD_FUNCTION(get_proximity_thd, arg){
 void prox_sensors_start(void) {
 	proximity_start();
 	calibrate_ir();
+	chThdSleepMilliseconds(1500);
 	chThdCreateStatic(get_proximity_thd_wa, sizeof(get_proximity_thd_wa), NORMALPRIO, get_proximity_thd, NULL);
 }

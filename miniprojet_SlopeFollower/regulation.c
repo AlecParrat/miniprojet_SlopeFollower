@@ -35,12 +35,15 @@
 // number of steps to do a 360° turn
 #define STEPS_TURN 1320
 
+// measured time to execute thread content : 12 us
 // period of the regulation thread [ms]
 #define REGUL_PERIOD 10 // 10 ms -> 100 Hz
 
 // regulator constants
-#define KP 5
-#define KI 0.01
+#define KP 5 //5
+#define KI 0.02 //0.1
+
+#define AVERAGE_SIZE_SPEED 10
 
 /*
  * PI regulator
@@ -72,7 +75,7 @@ int16_t regulator(int16_t mesured_angle, int16_t angle_to_reach, bool reset){
 	}
 
 	// integral term to reset if needed
-	if(reset) {
+	if(reset || err == 0) {
 		integr = 0;
 		integr_last = 0;
 	}
@@ -107,7 +110,7 @@ int16_t regulator(int16_t mesured_angle, int16_t angle_to_reach, bool reset){
 		chprintf((BaseSequentialStream *)&SD3, "Angle : %4d     ", mesured_angle);
 		chprintf((BaseSequentialStream *)&SD3, "Propo : %6.1f     ", prop);
 //		chprintf((BaseSequentialStream *)&SD3, "%d%%  |  ", pourcent_P);
-		chprintf((BaseSequentialStream *)&SD3, "Integ : %6.1f     ", integr);
+		chprintf((BaseSequentialStream *)&SD3, "Integ : %6.1f \n\r", integr);
 //		chprintf((BaseSequentialStream *)&SD3, "%d%%  |  ", pourcent_I);
 	}
 
@@ -199,10 +202,17 @@ static THD_FUNCTION(Regulator, arg) {
 	int8_t prox_alert = 0; // alerts returned by the proximity sensors
 	int16_t steps_to_do = 0; // steps to do to finish an escape maneuver
 	int16_t delta_speed = 0; // speed difference between the motors in normal mode
+	int16_t delta_speed_mean = 0;
 	int16_t angle_consigne = 0; // angle desired between the slope and the front of the robot
+
+	static int32_t sum_dSpeed = 0;
+	static int16_t values_dSpeed[AVERAGE_SIZE_SPEED] = {0};
+	static int16_t counter_dSpeed = 0;
 
 	while(1) {
 		time = chVTGetSystemTime();
+
+		//set_front_led(1);
 
 		// see if there is a proximity alert
 		if(mode_fonc == NORMAL) {
@@ -213,11 +223,12 @@ static THD_FUNCTION(Regulator, arg) {
 		if ((mode_fonc == NORMAL) && (prox_alert == 0)) { // normal mode
 			// call of the PI regulator, with the last computed angle
 			// if the slope is small, resets the integral term of the regulator
-			delta_speed = regulator(get_angle(), angle_consigne, get_slope());
+			delta_speed = regulator(get_angle(), angle_consigne, false);
+			delta_speed_mean = average(delta_speed, &sum_dSpeed, values_dSpeed, &counter_dSpeed, AVERAGE_SIZE_SPEED);
 			// motors command with the regulated value
 			if(MOTORS_ON) {
-				right_motor_set_speed(SPEED_MOY - delta_speed);
-				left_motor_set_speed(SPEED_MOY + delta_speed);
+				right_motor_set_speed(SPEED_MOY - delta_speed_mean);
+				left_motor_set_speed(SPEED_MOY + delta_speed_mean);
 			}
 
 		} else if ((mode_fonc == NORMAL) && (prox_alert != 0)) { // escape maneuver begins
@@ -235,6 +246,8 @@ static THD_FUNCTION(Regulator, arg) {
 			}
 			clear_leds();
 		}
+
+		//set_front_led(0);
 
 		chThdSleepUntilWindowed(time, time + MS2ST(REGUL_PERIOD));
 	}
