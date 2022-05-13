@@ -63,7 +63,7 @@ static void timer12_start(void){
  * Two red LEDs turn on when the calibration starts
  * When the calibration ends, the red LEDs turn off and the body LEDs turn on
  *
- * \param state		state that we want to display		1 : calibration begin	2: calibration end
+ * \param state		state that we want to display		1 : calibration begins	0 : calibration ends
  */
 void leds_calibration(unsigned int state) {
     set_led(LED3, state);

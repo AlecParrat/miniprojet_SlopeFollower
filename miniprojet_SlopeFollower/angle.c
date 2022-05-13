@@ -25,8 +25,8 @@
 #define SLOPE true
 #define ANGLE false
 
-#define AVERAGE_ANGLE_SIZE 10 // number of value to use to compute the angle average
-#define AVERAGE_SLOPE_SIZE 10 // number of value to use to compute the slope average
+#define AVERAGE_ANGLE_SIZE 10 // number of values to use to compute the angle average
+#define AVERAGE_SLOPE_SIZE 10 // number of values to use to compute the slope average
 
 //Version sans pointeurs moche
 //int16_t average(int16_t new_value, bool type) {
@@ -163,9 +163,11 @@ int16_t compute_angle(void){
 	// uncomment to print the computed angle value in RealTerm
 	// chprintf((BaseSequentialStream *)&SD3, "%Angle_x=%-7d\r\n", angle);
 
-	// uncomment to print
-	//chprintf((BaseSequentialStream *)&SD3, "%acc en z =%-7d       ", angle);
-	//chprintf((BaseSequentialStream *)&SD3, "%acc en z moy =%-7d\r\n", angle_mean);
+	// uncomment to print the mean angle value in RealTerm
+	//chprintf((BaseSequentialStream *)&SD3, "%Angle moy =%-7d\r\n", angle_mean);
+
+	// uncomment to print the acceleration in the Z axis in RealTerm
+	//chprintf((BaseSequentialStream *)&SD3, "%acc en z =%-7d       ", acc_z);
 
 	return(angle_mean);
 }
@@ -180,7 +182,7 @@ int16_t get_angle(void) {
 }
 
 /*
- * return the state of the surface in another file
+ * returns the state of the surface in another file
  *
  * \return	slope (high or low)
  */
@@ -216,12 +218,11 @@ static THD_FUNCTION(compute_angle_thd, arg){
  * inits and calibrates the IMU, starts the thread that computes the angle
  */
 void compute_angle_thd_start(){
-
 	// starts the IMU
 	imu_start();
     // calibrates the IMU
     calibrate_acc();
-    //time after calibration and before the first measurment
+    //time after calibration and before the first measurement
     chThdSleepMilliseconds(1500);
 	// starts the thread dedicated to the computation of the angle
 	chThdCreateStatic(compute_angle_thd_wa, sizeof(compute_angle_thd_wa), NORMALPRIO, compute_angle_thd, NULL);

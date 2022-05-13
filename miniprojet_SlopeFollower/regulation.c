@@ -19,7 +19,7 @@
 #define ARW true // true to activate the Anti Reset Windup
 
 // operating modes
-#define NORMAL false	// standart
+#define NORMAL false	// standard
 #define ESCAPING true	// proximity alert : escape maneuver
 
 // wheels maximum speed [step/s]
@@ -80,7 +80,7 @@ int16_t regulator(int16_t mesured_angle, int16_t angle_to_reach, bool reset){
 		integr_last = 0;
 	}
 
-	delta_speed_ini = prop + integr; // command computation
+	delta_speed_ini = prop + integr; // commands computation
 
 	// limits management
 	if (delta_speed_ini > SPEED_MAX) {
@@ -93,11 +93,11 @@ int16_t regulator(int16_t mesured_angle, int16_t angle_to_reach, bool reset){
 
 	// ARW management, useless if KI = 0
 	if (KI != 0) {
-		// if ARW activated AND there is saturation AND integration term would get bigger
+		// if ARW is activated AND there is saturation AND integration term would get bigger
 		if((ARW == true) && (delta_speed != delta_speed_ini) && abs(integr) >  abs(integr_last)) {
 			integr = integr_last; // integral term, can't get bigger
 		} else {
-			integr_last = integr; // normally stock integral term in the last one
+			integr_last = integr; // normally stocks integral term in the last one
 		}
 	}
 
@@ -214,14 +214,14 @@ static THD_FUNCTION(Regulator, arg) {
 
 		//set_front_led(1);
 
-		// see if there is a proximity alert
+		// sees if there is a proximity alert
 		if(mode_fonc == NORMAL) {
 			prox_alert = get_prox_alert();
 		}
 
 		// functioning modes control
 		if ((mode_fonc == NORMAL) && (prox_alert == 0)) { // normal mode
-			// call of the PI regulator, with the last computed angle
+			// calls of the PI regulator, with the last computed angle
 			// if the slope is small, resets the integral term of the regulator
 			delta_speed = regulator(get_angle(), angle_consigne, false);
 			delta_speed_mean = average(delta_speed, &sum_dSpeed, values_dSpeed, &counter_dSpeed, AVERAGE_SIZE_SPEED);
@@ -239,7 +239,7 @@ static THD_FUNCTION(Regulator, arg) {
 			left_motor_set_speed(0);
 			right_motor_set_speed(0);
 			mode_fonc = NORMAL;
-			delta_speed = regulator(get_angle(), angle_consigne, true); // call the regulator and resets its variable
+			delta_speed = regulator(get_angle(), angle_consigne, true); // calls the regulator and resets its variable
 			if(MOTORS_ON) {
 				right_motor_set_speed(SPEED_MOY - delta_speed);
 				left_motor_set_speed(SPEED_MOY + delta_speed);
@@ -254,7 +254,7 @@ static THD_FUNCTION(Regulator, arg) {
 }
 
 /*
- * regulator thread starts
+ * starts the thread dedicated to the regulation
  */
 void regulator_start(void){
     motors_init();
