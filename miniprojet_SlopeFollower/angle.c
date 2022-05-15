@@ -7,7 +7,7 @@
 #include <angle.h>
 #include <chprintf.h>
 #include <main.h>
-#include <leds.h>
+#include <average.h>
 
 #define PI 3.14
 
@@ -27,59 +27,6 @@
 
 #define AVERAGE_ANGLE_SIZE 10 // number of values to use to compute the angle average
 #define AVERAGE_SLOPE_SIZE 10 // number of values to use to compute the slope average
-
-//Version sans pointeurs moche
-//int16_t average(int16_t new_value, bool type) {
-//	int16_t sum = 0;
-//	// values to keep for the average computing
-//	static int16_t sum_angle = 0;
-//	static int16_t values_angle[AVERAGE_SIZE] = {0};
-//	static int16_t counter_angle = 0;
-//	static int16_t sum_slope = 0;
-//	static int16_t values_slope[AVERAGE_SIZE] = {0};
-//	static int16_t counter_slope = 0;
-//
-//	if(type == ANGLE) {
-//		sum_angle -= values_angle[counter_angle]; //remove the oldest value form the sum
-//		values_angle[counter_angle] = new_value; //stock the new value
-//		sum_angle += values_angle[counter_angle]; //add the new value to the sum
-//		sum = sum_angle;
-//
-//		counter_angle ++;
-//		if (counter_angle == AVERAGE_SIZE) {
-//			counter_angle = 0; // cycle the counter
-//		}
-//	} else {
-//		sum_slope -= values_slope[counter_slope]; //remove the oldest value form the sum
-//		values_slope[counter_slope] = new_value; //stock the new value
-//		sum_slope += values_slope[counter_slope]; //add the new value to the sum
-//		sum = sum_slope;
-//
-//		counter_slope ++;
-//		if (counter_slope == AVERAGE_SIZE) {
-//			counter_slope = 0; // cycle the counter
-//		}
-//	}
-//
-//	return sum / AVERAGE_SIZE;
-//}
-
-//version avec pointeurs qui marche pas pour une raison obscure
-// le capteur envoie des valeurs qui montent jusqu'à 30000 quand le robot est à l'envers
-//c'est la limite du int16_t (32767), mais c'est pas grave car on le retourne jamais
-//par contre pour la somme ce n'est pas suffisant
-//
-//autre probleme : si l'angle oscille entre 179 et -179, la moyenne donne 0
-int16_t average(int16_t new_value, int32_t* sum, int16_t* values, int16_t* counter, int16_t size) {
-
-	*sum -= values[*counter]; //remove the oldest value form the sum
-	*sum += new_value; //add the new value to the sum
-	values[*counter] = new_value; //stock the new value
-
-	*counter = (*counter + 1) % size; //cycle the counter
-
-	return *sum / size;
-}
 
 static int16_t angle = 0; // computed angle (value to regulate)
 static int16_t angle_mean = 0;

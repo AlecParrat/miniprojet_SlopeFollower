@@ -13,6 +13,7 @@ CSRC += ./main.c \
 		./angle.c\
 		./regulation.c\
 		./prox.c\
+		./average.c\
 
 #Header folders to include
 INCDIR += 

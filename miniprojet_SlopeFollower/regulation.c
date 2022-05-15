@@ -12,6 +12,7 @@
 #include <chprintf.h>
 #include <prox.h>
 #include <leds.h>
+#include <average.h>
 
 // customizable parameters
 #define PRINT 0 // 1 to print the regulator variable in the serial, 0 to stop the printing
@@ -240,9 +241,10 @@ static THD_FUNCTION(Regulator, arg) {
 			right_motor_set_speed(0);
 			mode_fonc = NORMAL;
 			delta_speed = regulator(get_angle(), angle_consigne, true); // calls the regulator and resets its variable
+			delta_speed_mean = average(delta_speed, &sum_dSpeed, values_dSpeed, &counter_dSpeed, AVERAGE_SIZE_SPEED);
 			if(MOTORS_ON) {
-				right_motor_set_speed(SPEED_MOY - delta_speed);
-				left_motor_set_speed(SPEED_MOY + delta_speed);
+				right_motor_set_speed(SPEED_MOY - delta_speed_mean);
+				left_motor_set_speed(SPEED_MOY + delta_speed_mean);
 			}
 			clear_leds();
 		}
