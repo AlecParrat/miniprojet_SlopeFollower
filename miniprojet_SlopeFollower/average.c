@@ -6,6 +6,7 @@
  */
 
 #include <main.h>
+#include <average.h>
 
 /*
  * Simple moving average
@@ -31,5 +32,5 @@ int16_t average(int16_t new_value, int32_t* sum, int16_t* values, int16_t* count
 
 	*counter = (*counter + 1) % size; //cycle the counter
 
-	return *sum / size;
+	return *sum / size; // compute and return the average
 }

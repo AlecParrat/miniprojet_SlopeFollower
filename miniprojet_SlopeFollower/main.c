@@ -28,7 +28,7 @@ messagebus_t bus;
 MUTEX_DECL(bus_lock);
 CONDVAR_DECL(bus_condvar);
 
-//inits the serial communication
+// inits the serial communication
 static void serial_start(void)
 {
 	static SerialConfig ser_cfg = {
@@ -41,11 +41,11 @@ static void serial_start(void)
 	sdStart(&SD3, &ser_cfg); // UART3.
 }
 
-//inits the timer 12
+// inits the timer 12
 static void timer12_start(void){
-    //General Purpose Timer configuration   
-    //timer 12 is a 16 bit timer so we can measure time
-    //to about 65ms with a 1Mhz counter
+    // General Purpose Timer configuration
+    // timer 12 is a 16 bit timer so we can measure time
+    // to about 65ms with a 1Mhz counter
     static const GPTConfig gpt12cfg = {
         1000000,        /* 1MHz timer clock in order to measure uS.*/
         NULL,           /* Timer callback.*/
@@ -54,7 +54,7 @@ static void timer12_start(void){
     };
 
     gptStart(&GPTD12, &gpt12cfg);
-    //let the timer count to max value
+    // let the timer count to max value
     gptStartContinuous(&GPTD12, 0xFFFF);
 }
 
@@ -77,41 +77,33 @@ int main(void)
 {
 	/* Initializations */
 
-	//inits the inter-process communication bus
-	messagebus_init(&bus, &bus_lock, &bus_condvar);
+	messagebus_init(&bus, &bus_lock, &bus_condvar); // inits the inter-process communication bus
 
     halInit();
     chSysInit();
 
-    //starts the serial communication
-    serial_start();
-    //starts timer 12
-    timer12_start();
+    serial_start(); // starts the serial communication
+    timer12_start(); // starts timer 12
 
-    //sleep before calibration, to allow the user to remove their hands
-    chThdSleepMilliseconds(2000);
+    chThdSleepMilliseconds(2000); // sleep before calibration, to allow the user to remove their hands
 
-    // red LEDs turn on
-    leds_calibration(1);
+    leds_calibration(1); // red LEDs turn on
 
     // sensors calibration and threads start
     // the robot should stay on a flat surface and far from the walls
     compute_angle_thd_start(); // calibrates the IMU and starts the thread dedicated to the computation of the angle
     prox_sensors_start(); // calibrates the proximity sensors and starts the thread dedicated to the proximity sensors
 
-    //sleep between calibration and motors start
-    chThdSleepMilliseconds(1000);
+    chThdSleepMilliseconds(1000); // sleep between calibration and motors start
 
     // end of calibrations
-    // bodyLEDs turn on
-    leds_calibration(0);
+    leds_calibration(0); // red LEDs turn off & bodyLEDs turn on
 
-    // starts the thread dedicated to the regulation and motors control
-    regulator_start();
+    regulator_start(); // starts the thread dedicated to the regulation and motors control
 
     /* Infinite loop. */
     while (1) {
-    	chThdSleepMilliseconds(1000);
+    	chThdSleepMilliseconds(1000); //sleep so that the main doesn't take resources
     }
 }
 

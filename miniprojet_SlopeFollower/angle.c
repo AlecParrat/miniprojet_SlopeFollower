@@ -1,11 +1,9 @@
 #include <math.h>
-
 #include <sensors/imu.h>
 #include <sensors/mpu9250.h>
 #include <i2c_bus.h>
 #include <msgbus/messagebus.h>
 #include <angle.h>
-#include <chprintf.h>
 #include <main.h>
 #include <average.h>
 
@@ -21,16 +19,29 @@
 
 #define INCL_LIMIT 300 // inclination threshold, if the slope isn't sufficient, the angle is 0
 
-//type of averaging to do
-#define SLOPE true
-#define ANGLE false
-
 #define AVERAGE_ANGLE_SIZE 10 // number of values to use to compute the angle average
 #define AVERAGE_SLOPE_SIZE 10 // number of values to use to compute the slope average
 
-static int16_t angle = 0; // computed angle (value to regulate)
 static int16_t angle_mean = 0;
 static bool flat = true; // true if the slope is small (useful for the regulator)
+
+/*
+ * allows to get the last computed angle value from another file
+ *
+ * \return	computed angle
+ */
+int16_t get_angle(void) {
+	return angle_mean;
+}
+
+/*
+ * returns the state of the surface in another file
+ *
+ * \return	slope (high or low)
+ */
+bool get_slope(void) {
+	return flat;
+}
 
 /*
  * computes and returns the slope angle according to the defined convention (left : [-180°, 0°[ ; right : ]0°, +180°])
@@ -56,25 +67,25 @@ int16_t compute_angle(void){
 	int16_t acc_y = 0;					// acceleration on the Y axis
 	int16_t acc_z = 0;					// acceleration on the Z axis
 	int16_t acc_z_mean = 0;				// mean of acceleration Z
+	int16_t angle = 0;					// computed angle (value to regulate)
 
-		// values to keep for the average computing
-		static int32_t sum_angle = 0;
-		static int16_t values_angle[AVERAGE_ANGLE_SIZE] = {0};
-		static int16_t counter_angle = 0;
-		static int32_t sum_slope = 0;
-		static int16_t values_slope[AVERAGE_SLOPE_SIZE] = {0};
-		static int16_t counter_slope = 0;
+	// values to keep for the average computing
+	static int32_t sum_angle = 0;
+	static int16_t values_angle[AVERAGE_ANGLE_SIZE] = {0};
+	static int16_t counter_angle = 0;
+	static int32_t sum_slope = 0;
+	static int16_t values_slope[AVERAGE_SLOPE_SIZE] = {0};
+	static int16_t counter_slope = 0;
 
-	acc_z = get_acc(Z_AXIS) - get_acc_offset(Z_AXIS);
+	acc_z = get_acc(Z_AXIS) - get_acc_offset(Z_AXIS); // acquires the acceleration on the Z axis and removes the offset from the calibration.
 
-	//acc_z_mean = average(acc_z, SLOPE);
-	acc_z_mean = average(acc_z, &sum_slope, values_slope, &counter_slope, AVERAGE_SLOPE_SIZE);
+	acc_z_mean = average(acc_z, &sum_slope, values_slope, &counter_slope, AVERAGE_SLOPE_SIZE); // averaging of the value
 
 	if(acc_z_mean > INCL_LIMIT) {
 		flat =  false; // slope is sufficient to start regulation
-		acc_x = get_acc(X_AXIS) - get_acc_offset(X_AXIS); // acquires the acceleration on the X axis and retires the offset from the calibration.
+		acc_x = get_acc(X_AXIS) - get_acc_offset(X_AXIS); // acquires the acceleration on the X axis and removes the offset from the calibration.
 
-		acc_y = get_acc(Y_AXIS) - get_acc_offset(Y_AXIS); // acquires the acceleration on the Y axis and retires the offset from the calibration.
+		acc_y = get_acc(Y_AXIS) - get_acc_offset(Y_AXIS); // acquires the acceleration on the Y axis and removes the offset from the calibration.
 
 		angle=(180/PI)*atan(((float)acc_y)/((float)acc_x));	// computes the angle and converts it in degrees
 
@@ -82,59 +93,29 @@ int16_t compute_angle(void){
 
 		// dial 1
 		if(acc_x > 0 && acc_y > 0){
-			angle = -angle-+90;
+			angle = -angle - 90;
 		}
 
 		// dial 2
 		if(acc_x < 0 && acc_y > 0){
-			angle = -angle+90;
+			angle = -angle + 90;
 		}
 
 		// dial 3
 		if(acc_x < 0 && acc_y < 0){
-			angle = -angle+90;
+			angle = -angle + 90;
 		}
 
 		// dial 4
 		if(acc_x > 0 && acc_y <0){
-			angle = -angle-90;
+			angle = -angle - 90;
 		}
 	} else {
 		angle = 0;
 		flat = true; // slope isn't sufficient to start regulation
 	}
 
-	//angle_mean = average(angle, ANGLE);
-	angle_mean = average(angle, &sum_angle, values_angle, &counter_angle, AVERAGE_ANGLE_SIZE);
-
-	// uncomment to print the computed angle value in RealTerm
-	// chprintf((BaseSequentialStream *)&SD3, "%Angle_x=%-7d\r\n", angle);
-
-	// uncomment to print the mean angle value in RealTerm
-	//chprintf((BaseSequentialStream *)&SD3, "%Angle moy =%-7d\r\n", angle_mean);
-
-	// uncomment to print the acceleration in the Z axis in RealTerm
-	//chprintf((BaseSequentialStream *)&SD3, "%acc en z =%-7d       ", acc_z);
-
-	return(angle_mean);
-}
-
-/*
- * allows to get the last computed angle value from another file
- *
- * \return	computed angle
- */
-int16_t get_angle(void) {
-	return angle_mean;
-}
-
-/*
- * returns the state of the surface in another file
- *
- * \return	slope (high or low)
- */
-bool get_slope(void) {
-	return flat;
+	return(average(angle, &sum_angle, values_angle, &counter_angle, AVERAGE_ANGLE_SIZE)); // averageing of the angle
 }
 
 /*
@@ -151,11 +132,7 @@ static THD_FUNCTION(compute_angle_thd, arg){
 	while(1){
 		time = chVTGetSystemTime();
 
-		//set_front_led(1);
-
-    	angle = compute_angle(); // angle computation function
-
-    	//set_front_led(0);
+    	angle_mean = compute_angle(); // angle computation function
 
 		chThdSleepUntilWindowed(time, time + MS2ST(COMPUTE_ANGLE_PERIOD));
 	}
@@ -165,12 +142,8 @@ static THD_FUNCTION(compute_angle_thd, arg){
  * inits and calibrates the IMU, starts the thread that computes the angle
  */
 void compute_angle_thd_start(){
-	// starts the IMU
-	imu_start();
-    // calibrates the IMU
-    calibrate_acc();
-    //time after calibration and before the first measurement
-    chThdSleepMilliseconds(1500);
-	// starts the thread dedicated to the computation of the angle
-	chThdCreateStatic(compute_angle_thd_wa, sizeof(compute_angle_thd_wa), NORMALPRIO, compute_angle_thd, NULL);
+	imu_start(); // starts the IMU
+    calibrate_acc(); // calibrates the IMU
+    chThdSleepMilliseconds(1500); //time after calibration and before the first measurement
+	chThdCreateStatic(compute_angle_thd_wa, sizeof(compute_angle_thd_wa), NORMALPRIO, compute_angle_thd, NULL); // starts the thread dedicated to the computation of the angle
 }
