@@ -73,6 +73,10 @@ void leds_calibration(unsigned int state) {
     }
 }
 
+/*
+ * main function
+ * does only initializations
+ */
 int main(void)
 {
 	/* Initializations */

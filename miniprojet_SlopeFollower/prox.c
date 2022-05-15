@@ -5,7 +5,8 @@
  *      Author: alecp
  */
 
-#include <main.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <prox.h>
 #include <msgbus/messagebus.h>
 #include <sensors/proximity.h>
@@ -26,8 +27,9 @@
 #define LEFT_2 6		// IR7 on the body
 #define LEFT_3 5		// IR6 on the body
 
-// Proximity alert variable
-static int8_t proximity_alert = 0;
+extern messagebus_t bus; // communication variable defined in main.c
+
+static int8_t proximity_alert = 0; // Proximity alert variable
 
 /*
  * allows to  get the value of the proximity alert in an other file

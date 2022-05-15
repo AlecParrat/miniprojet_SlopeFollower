@@ -5,7 +5,8 @@
  *      Author: alecp
  */
 
-#include <main.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <motors.h>
 #include <regulation.h>
 #include <angle.h>

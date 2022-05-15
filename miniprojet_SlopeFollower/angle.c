@@ -1,10 +1,18 @@
+/*
+ * prox.c
+ *
+ *  Created on: 20 avr. 2022
+ *      Author: alecp
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
 #include <math.h>
 #include <sensors/imu.h>
 #include <sensors/mpu9250.h>
 #include <i2c_bus.h>
 #include <msgbus/messagebus.h>
 #include <angle.h>
-#include <main.h>
 #include <average.h>
 
 #define PI 3.14
@@ -21,6 +29,8 @@
 
 #define AVERAGE_ANGLE_SIZE 10 // number of values to use to compute the angle average
 #define AVERAGE_SLOPE_SIZE 10 // number of values to use to compute the slope average
+
+extern messagebus_t bus; // communication variable defined in main.c
 
 static int16_t angle_mean = 0;
 static bool flat = true; // true if the slope is small (useful for the regulator)
